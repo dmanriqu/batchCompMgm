@@ -1,4 +1,4 @@
-#' An r6 class for tracking batch computation jobs
+#' R6 class for tracking batch computation jobs
 trialDescriptionCG <- R6::R6Class(
   'trialDescription',
   private = list(
@@ -29,8 +29,19 @@ trialDescriptionCG <- R6::R6Class(
     }
   ),
   public = list(
-    #' hola
+    #' @description
+    #' Load values for computation definition
     load_values = NULL,
+
+    #' @description
+    #' Change hair color.
+    #' @param val New hair color.
+    #' @examples
+    #' P <- Person("Ann", "black")
+    #' P$hair
+    #' P$set_hair("red")
+    #' P$hair 
+    #' @return test
     initialize = function(...){
       #create fields and a function to load those fields
       self$load_values  <- function(){}
@@ -46,9 +57,20 @@ trialDescriptionCG <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description
+    #' Produces a yaml definition of values
+    #' @examples
+    #' @param file
+    #' @return string with the yaml defintion
     yaml = function(file = NULL){
       yaml::as.yaml(private$params, line.sep = '\n')
     },
+
+    #' @description
+    #' Produces a json definition of values
+    #' @examples
+    #' @param file
+    #' @return string with the json defintion
     json = function(file = NULL){
       jsonlite::toJSON(private$params, pretty = TRUE)
     },
@@ -121,11 +143,12 @@ trialDescriptionCG <- R6::R6Class(
 #  )
 #)
 
+utils::globalVariables(names = c('self', 'super'))
 specializeTrialMgmtClass <- function(
   classname = 'newClass', 
   title = 'Normal simulation parameters',
   eq_fn = function(a,b){a$hash_eq(b)}, ...){
-  x <- R6::R6Class(
+  R6::R6Class(
     'basic_params', inherit = trialDescriptionCG,
     public = list(
       initialize = function(){
@@ -142,6 +165,9 @@ specializeTrialMgmtClass <- function(
       }
     )
   )
-  function(){x$new()}
 }
 
+# @description
+# @examples
+# @param
+# @return 
