@@ -5,7 +5,7 @@ library(roxygen2)
 source('R/values.R')
 source(file = 'R/compObj.R')
 
-roxygen2::roxygenize(package.dir = 'output'
+roxygen2::roxygenize(package.dir = 'output')
 new_trial <- specializeTrialMgmtClass( 
   title = 'Normal simulation',
   eq_fn = function(a,b){
@@ -15,12 +15,13 @@ new_trial <- specializeTrialMgmtClass(
   id=NULL, sigma=NULL, sd=NULL, notes=NULL
 )
 
-x <- new_trial()
-y <- new_trial()
+x <- new_trial$new()
+y <- new_trial$new()
 x$load_values(id = 'll', sigma = 1, sd = 2, notes ='hola')
 y$load_values(id = 'll', sigma = 1, sd = 2, notes ='hola')
 
-com <- compObj$new(x)
+(com <- compObj$new(x))
+com
 com$status
 com$log
 com$addEvent('cmp1', 'Calculate 1')
