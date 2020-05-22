@@ -2,7 +2,7 @@
 # Create R package Makefile
 #---------------------------------------------------------------------------
 VERSION = $(shell cat data/version.txt)
-VERSION_ESC = $(shell $VERSION | sed 's/\./\\\./g') 
+VERSION_ESC = $(shell $VERSION | sed --posix -E 's/\./\\\./g') 
 
 DATE = $(shell date +'%F')
 
@@ -34,7 +34,7 @@ TEXT_FILE_EXT = *.R *.cpp *.Rd *.h DESCRIPTION NAMESPACE
 all: $(ALL_FILES) copy output/version.txt output/$(R_PACK)
 
 copy : $(ALL_FILES)
-	cd $(PACK_ROOT); sed -i -e 's/<date>/$(DATE)/g' -e 's/<version>/$(VERSION)/g' DESCRIPTION
+	cd $(PACK_ROOT); sed --posix -E -i -e 's/<date>/$(DATE)/g' -e 's/<version>/$(VERSION)/g' DESCRIPTION
 
 output/version.txt output/$(R_PACK) : $(ALL_FILES)
 	Rscript --vanilla -e 'roxygen2::roxygenize(package.dir = "$(PACK_ROOT)")'
@@ -74,8 +74,13 @@ $(addprefix $(R_META_DEST)/, $(R_META)) : $(R_META_DEST)/% : $(R_META_LOC)/% | $
 %/ :
 	mkdir -p $@
 
-check:
-	cd output; R CMD check $(R_PACK)_$(VERSION).tar.gz
+check: | cache/
+	cp output/$(R_PACK)_$(VERSION).tar.gz cache/
+	cd cache; R CMD check $(R_PACK)_$(VERSION).tar.gz
+
+install: | cache/
+	cp output/$(R_PACK)_$(VERSION).tar.gz cache/
+	R CMD INSTALL -l cache cache/$(R_PACK)_$(VERSION).tar.gz
 
 clean :
 	rm -rf output/
