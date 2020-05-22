@@ -1,6 +1,10 @@
-export(compObj)
-export(trialDescriptionCG)
-export(`==.trialDescription`)
-export(`!=.trialDescription`)
-export(specializeTrialMgmtClass)
 importFrom(R6, R6Class) 
+importFrom(utils, globalVariables) 
+
+export(trialDescriptionCG)
+export(specializeTrialMgmtClass)
+S3method(`!=`, trialDescription)
+S3method(`==`, trialDescription)
+
+export(compObj)
+
