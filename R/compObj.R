@@ -29,9 +29,9 @@ compObj  <- R6::R6Class(
     print       = function(){
       cat('Results for computation','\n')
       print(private$Pinput)
-      cat('------------------------------\n')
-      cat('Status:', private$Plog, '\n')
-      cat('log:', private$Plog, '\n')
+      cat('Status:', as.character(private$Pstatus), '\n')
+      cat('Event log:\n')
+      print(private$Plog)
     },
     save = function(file){
     },
