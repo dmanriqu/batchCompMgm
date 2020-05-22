@@ -3,7 +3,7 @@ library(yaml)
 library(jsonlite)
 library(roxygen2)
 source('R/values.R')
-source(file = 'R/compObj.R')
+source(file = 'R/batchComp.R')
 
 roxygen2::roxygenize(package.dir = 'output')
 new_trial <- specializeTrialMgmtClass( 
@@ -20,7 +20,7 @@ y <- new_trial$new()
 x$load_values(id = 'll', sigma = 1, sd = 2, notes ='hola')
 y$load_values(id = 'll', sigma = 1, sd = 2, notes ='hola')
 
-(com <- compObj$new(x))
+(com <- batchComp$new(x))
 com
 com$status
 com$log

@@ -1,7 +1,7 @@
 #Object for storing computaitons
 
-compObj  <- R6::R6Class(
-  classname = 'compObj',
+batchComp  <- R6::R6Class(
+  classname = 'batchComp',
   lock_objects = FALSE,
   private   = list(
     Plog  = data.frame(id = character(0), descr = character(0), notes = character(0), timestamp = character(0)),
@@ -19,8 +19,8 @@ compObj  <- R6::R6Class(
   ),
   public = list(
     initialize  = function(input_values){
-      if(!('trialDescription' %in% class(input_values))){
-        stop('Need object "trialDescription" for initialization')
+      if(!('paramComput' %in% class(input_values))){
+        stop('Need object "paramComput" for initialization')
       }
       private$Pinput  <- input_values
       private$Pstatus[1] <- 'INIT'

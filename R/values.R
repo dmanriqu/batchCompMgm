@@ -1,6 +1,30 @@
 #' R6 class for tracking batch computation jobs
-trialDescriptionCG <- R6::R6Class(
-  'trialDescription',
+#'
+#' @examples
+#' CBasic_param <- R6::R6Class(
+#'   'basic_params', inherit = paramComput,
+#'   public = list(
+#'     initialize = function(){
+#'       super$initialize(
+#'         COMP_ID = 'TEST_COMP',
+#'         agente_col = 'Agente',
+#'         bi = 10,
+#'         geo_col = 'stratum_david4',
+#'         lcmcr_lists = c('in_CICR', 'in_CEDAP', 'in_DP', 'in_COMISEDH', 'in_CNDDHH', 'in_CVR', 'in_MIMDES'),
+#'         loglin_lists = c('in_CICR', 'in_CEDAP', 'in_DP', 'in_COMISEDH', 'in_CNDDHH', 'in_CVR', 'in_MIMDES'),
+#'         nsam = 500,
+#'         th = 50,
+#'         imp_source = 'src/imputation_3.R',
+#'       )
+#'     }
+#'     # add code to override the equal method for other ways of comparing
+#'     #equal = function(q){
+#'     #  super$equal(q)    
+#'     #}
+#'   )
+#' )
+paramComput <- R6::R6Class(
+  'paramComput',
   private = list(
     params = NULL,
     date_data = NULL,
@@ -35,13 +59,9 @@ trialDescriptionCG <- R6::R6Class(
 
     #' @description
     #' Change hair color.
-    #' @param val New hair color.
+    #' @param ... parameters to track.
     #' @examples
-    #' P <- Person("Ann", "black")
-    #' P$hair
-    #' P$set_hair("red")
-    #' P$hair 
-    #' @return test
+    #' x <- paramComput$new(a = 1, b = 2)
     initialize = function(...){
       #create fields and a function to load those fields
       self$load_values  <- function(){}
@@ -59,8 +79,7 @@ trialDescriptionCG <- R6::R6Class(
 
     #' @description
     #' Produces a yaml definition of values
-    #' @examples
-    #' @param file
+    #' @param file file name for saving the output. To console if NULL.
     #' @return string with the yaml defintion
     yaml = function(file = NULL){
       yaml::as.yaml(private$params, line.sep = '\n')
@@ -68,8 +87,7 @@ trialDescriptionCG <- R6::R6Class(
 
     #' @description
     #' Produces a json definition of values
-    #' @examples
-    #' @param file
+    #' @param file file name for saving the output. To console if NULL.
     #' @return string with the json defintion
     json = function(file = NULL){
       jsonlite::toJSON(private$params, pretty = TRUE)
@@ -100,28 +118,32 @@ trialDescriptionCG <- R6::R6Class(
       }
       return(NULL)
      },
-    hash = function(method = c('sha256')){
+    #' @description
+    #' Calculate sha256 hash of values.
+    hash = function(){
       if(!require(digest))stop("package 'digest' required")
       return(digest::sha1(self$values))
     },
-    hash_eq = function(o){
-      digest::sha1(self$values) == self$hash()
+    #' @description
+    #' Check if another paramComput object has the same values based on hash.
+    hash_eq = function(other_obj){
+      digest::sha1(self$values) == other_obj$hash()
     }
    )
 )  
 
-`==.trialDescription` = function(a, b){
+`==.paramComput` = function(a, b){
  a$equal(b)
 }
 
-`!=.trialDescription` = function(a, b){
+`!=.paramComput` = function(a, b){
  !a$equal(b)
 }
 
 ##Examples:
 ##Example of use
 #CBasic_param <- R6::R6Class(
-#  'basic_params', inherit = trialDescriptionCG,
+#  'basic_params', inherit = paramComput,
 #  public = list(
 #    initialize = function(){
 #      super$initialize(
@@ -144,12 +166,13 @@ trialDescriptionCG <- R6::R6Class(
 #)
 
 utils::globalVariables(names = c('self', 'super'))
-specializeTrialMgmtClass <- function(
+
+createParamComputClass <- function(
   classname = 'newClass', 
   title = 'Normal simulation parameters',
   eq_fn = function(a,b){a$hash_eq(b)}, ...){
   R6::R6Class(
-    'basic_params', inherit = trialDescriptionCG,
+    classname, inherit = paramComput,
     public = list(
       initialize = function(){
         super$initialize(...)
