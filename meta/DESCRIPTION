@@ -1,0 +1,15 @@
+Package: trialMgmnt
+Type: Package
+Title: Trial Management 
+Version: <version>
+Date: <date>
+Author: Daniel Manrique-Vallier
+Description: Utilities for managing long computations
+Maintainer: Daniel Manrique-Vallier <dmanriqu@indiana.edu>
+License: GPL (>= 2) 
+Depends: R (>= 3.0.1)
+Imports: R6
+Collate: values.R compObj.R 
+
+
+

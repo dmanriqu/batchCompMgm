@@ -1,0 +1,6 @@
+export(compObj)
+export(trialDescriptionCG)
+export(`==.trialDescription`)
+export(`!=.trialDescription`)
+export(specializeTrialMgmtClass)
+importFrom(R6, R6Class) 
