@@ -26,9 +26,10 @@
 paramComput <- R6::R6Class(
   'paramComput',
   private = list(
-    params = NULL,
-    date_data = NULL,
-    add = function(...){
+    Pparams = NULL,
+    Pdate = NULL,
+    PLOADED = FALSE,
+    Padd = function(...){
       list_params <- list(...)
       if(!is.list(list_params)) stop('Input must be a named list of parameters')
       if(sum(unique(names(list_params)) != '') != length(list_params)){
@@ -36,20 +37,19 @@ paramComput <- R6::R6Class(
       } 
       if( length(intersect(names(self$params), names(list_params))) > 0)
         stop('Cannot have duplicate parameter names')
-      private$params <- append(private$params, list_params)
-    },
-    LOADED = FALSE
+      private$Pparams <- append(private$Pparams, list_params)
+    }
   ),
   active = list(
     values = function(value){
       if (missing(value)){
-        return(private$params)
+        return(private$Pparams)
       } else {
         stop("'values' is read-only. Use (function) instead.")
       }
     },
     date = function(){
-      return(private$date_data)
+      return(private$Pdate)
     }
   ),
   public = list(
@@ -66,24 +66,24 @@ paramComput <- R6::R6Class(
       #create fields and a function to load those fields
       self$load_values  <- function(){}
       a <- match.call(expand.dots = FALSE)$`...`
-      bod <- paste(paste0('private$params$',paste(names(a), names(a), sep = ' = ')), collapse = '\n')
-      bod <- paste0('if(private$LOADED){warning(\'Values were already loaded.\')} else {private$LOADED <- TRUE}\n',bod)
+      bod <- paste(paste0('private$Pparams$',paste(names(a), names(a), sep = ' = ')), collapse = '\n')
+      bod <- paste0('if(private$PLOADED){warning(\'Values were already loaded.\')} else {private$PLOADED <- TRUE}\n',bod)
       b <- parse(text = paste('{', bod, '}', sep = '\n')) 
       formals(self$load_values) <- a
       body(self$load_values) <- b 
-      private$params <- list()
-      private$add(...)
-      private$date_data <- date()
+      private$Pparams <- list()
+      private$Padd(...)
+      private$Pdate <- date()
       invisible(self)
     },
 
-    #' @description
-    #' Produces a yaml definition of values
-    #' @param file file name for saving the output. To console if NULL.
-    #' @return string with the yaml defintion
-    yaml = function(file = NULL){
-      yaml::as.yaml(private$params, line.sep = '\n')
-    },
+    ##' @description
+    ##' Produces a yaml definition of values
+    ##' @param file file name for saving the output. To console if NULL.
+    ##' @return string with the yaml defintion
+    #yaml = function(file = NULL){
+    #  yaml::as.yaml(private$Pparams, line.sep = '\n')
+    #},
 
     #' @description
     #' Produces a json definition of values
@@ -104,7 +104,7 @@ paramComput <- R6::R6Class(
       do.call(self$load_values, lista)
     },
     filename = function(naming_field, rule = '%.rds'){
-      gsub(pattern = '%', replacement = private$params[[naming_field]], x = rule)
+      gsub(pattern = '%', replacement = private$Pparams[[naming_field]], x = rule)
     },
     load_cache = function(cached_params_name = 'params',
                            naming_field ='COMP_ID',   file_pattern = 'tmp/interm/%.rds'){
@@ -167,9 +167,10 @@ paramComput <- R6::R6Class(
 
 utils::globalVariables(names = c('self', 'super'))
 
+#' @param Either a named list indicating names and default values.
 createParamComputClass <- function(
   classname = 'newClass', 
-  title = 'Normal simulation parameters',
+  title = 'Title of Class',
   eq_fn = function(a,b){a$hash_eq(b)}, ...){
   R6::R6Class(
     classname, inherit = paramComput,
