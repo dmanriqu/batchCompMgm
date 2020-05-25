@@ -31,10 +31,6 @@ taskLog <- R6::R6Class(
      }
      private$log[[id]]$time_end  <-  date()
    },
-   getLog = function(){ private$log },
-   setLog= function(x){
-     private$log <- x
-   },
    log_tabular = function(){
      y <- lapply(private$log, 
             FUN = function(x){
@@ -52,6 +48,10 @@ taskLog <- R6::R6Class(
             }
      )
      do.call(rbind, y)
+   },
+   getLog = function(){ private$log },
+   setLog= function(x){
+     private$log <- x
    }
   )
      

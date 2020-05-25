@@ -60,16 +60,29 @@ batchComp  <- R6::R6Class(
     },
     export = function(file = NULL){
       x <- list(
+         class = 'batchComp',
          parameters = private$parameters$getDefinition(),   
          closed = private$closed,
          concurrent = private$Pconcurrent,
          log  = private$log$getLog()
       )
-      jsonlite::toJSON(x, pretty = TRUE)
+      if (!is.null(file)) {
+        x <- jsonlite::write_json(x, path = file, pretty = TRUE)
+      } else {
+        x <- jsonlite::toJSON(x, pretty = TRUE)
+      }
     },
     import = function(file = NULL, string = NULL){
+      #TODO: make sure that the data tyeps match in x
       # if file is not NULL read it and set "string"
-      x <- jsonlite::fromJSON(txt = string)
+      if (!is.null(file)) {
+        x <- jsonlite::read_json(path = file)
+      } else {
+        x <- jsonlite::fromJSON(txt = string)
+      }
+      if (x$class != 'batchComp') {
+        stop('Wrong "class" attribute')
+      }
       private$parameters$loadDefinition(x$parameters)
       private$closed = x$closed
       private$concurrent = x$concurrent
