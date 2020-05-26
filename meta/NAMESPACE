@@ -1,8 +1,8 @@
+import(jsonlite)
 importFrom(R6, R6Class) 
 importFrom(utils, globalVariables) 
 export(paramComput)
-export(createParamComputClass)
+export(batchComp)
 S3method(`!=`, paramComput)
 S3method(`==`, paramComput)
-export(batchComp)
 

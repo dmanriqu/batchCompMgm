@@ -8,8 +8,8 @@ Description: Utilities for managing long computations
 Maintainer: Daniel Manrique-Vallier <dmanriqu@indiana.edu>
 License: GPL (>= 2) 
 Depends: R (>= 3.0.1)
-Imports: R6, utils
-Collate: values.R compObj.R 
+Imports: jsonlite, R6, utils
+Collate: paramComput.R taskLog.R batchComp.R 
 
 
 

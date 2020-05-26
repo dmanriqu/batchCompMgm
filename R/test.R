@@ -4,22 +4,51 @@ library(yaml)
 library(jsonlite)
 library(magrittr)
 
-source('R/values.R')
+source(file = 'R/values.R')
+source(file = 'R/taskLog.R')
 source(file = 'R/compObj.R')
-#library(trialMgmnt, lib.loc="cache/")
-normalParameters <-  createParamComputClass(classname = 'normalSimulation', title = 'Normal Simulation Parameters',
-mean = 1, sd = 1, trials =1)
-a <- normalParameters$new()
-b <- normalParameters$new()
 
-(a$load_values(mean = 1, sd = 2, trials = 1000))
-a$print()
+a <- paramComput$new(parameter_list = list(id = 'TEST_COMP', mean = 1.0, sd = 1.0, trials =1000))
+b <- paramComput$new(parameter_list = list(id = 'COMP', mean = 1, sd = 1, trials =1000))
+b$writeJSONDef()
+a == b
+a == a
+
+(js  <- a$writeJSONDef())
+b$loadJSONDef(js)
+(jsb  <- b$writeJSONDef())
+b$loadJSONDef(js)
+b$getDefinition()
+a == b
+dput(a$values) 
+dput(b$values)
+
+
+class(a)
+class
+a
+
+class(a)
+x <- taskLog$new()
+x$addEntry(id = "e2", name = "segunda", RobjectNames = c("uno", "dos"))
+x$addEntry(id = "e3", name = "segunda", RobjectNames = c("uno", "dos"))
+x$getLog()
+jsonlite::toJSON(x = x$getLog(), pretty = TRUE) 
+x$getLog()
+x$log_tabular()
+x
+x$closeEntry('e3')
+
 
 batch <- batchComp$new(a)
-batch$log
 batch$addTask(name = 'task1', descr = 'uno')
-batch$addTask(name = 'task2', descr = 'uno', notes = NULL)
-batch$completeTask('TSK2')
-batch$log
-x <- batch$export()
-batch$import(string = x)
+batch$addTask(name = 'task2', descr = 'uno', notes = "not sure what's going on")
+(y  <- batch$export())
+
+batch
+x <- jsonlite::fromJSON(y)
+eval(parse(text = x$parameters$eq_function))
+
+batch$export(file = 'tmp/batch1.json')
+batch$import(file = 'tmp/batch1.json')
+batch
