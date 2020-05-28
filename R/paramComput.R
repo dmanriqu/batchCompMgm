@@ -39,9 +39,12 @@ paramComput <- R6::R6Class(
     #' @param ... parameters to track.
     #' @examples
     #' x <- paramComput$new(a = 1, b = 2)
-    initialize = function(file = NULL, parameter_names = NULL, parameter_list = NULL, eq_function = function(a,b){all.equal(a,b)}){
+    initialize = function(file = NULL, strJSON  = NULL, parameter_names = NULL, parameter_list = NULL, eq_function = function(a,b){all.equal(a,b)}){
       if (!is.null(file)){
         self$loadJSONDef(file)
+        return(self)
+      } else if (!is.null(strJSON)) {
+        self$loadJSONDef(strJSON )
         return(self)
       } else if (!is.null(parameter_names)) {
         #create list with parameter names and call private$Padd()
@@ -53,7 +56,7 @@ paramComput <- R6::R6Class(
       if (names(parameter_list)[1] != 'id') {
         stop('First element of the parameter list must be "id"')
       }
-      private$Pdate = date()
+      private$Pdate = Sys.time()
       private$Peq_function = eq_function
     },
 
@@ -66,7 +69,7 @@ paramComput <- R6::R6Class(
     },
     print = function(){
       cat( paste(names(self$values), self$values, sep = ' = '),  sep = '\n')
-      cat('Date:', self$date, '\n')
+      cat('Date:', as.character(self$date), '\n')
     },
     # load_values_from_list = function(lista){
     #   do.call(self$load_values, lista)
@@ -76,7 +79,7 @@ paramComput <- R6::R6Class(
     # },
     getDefinition = function(){
       list(class = 'paramComput', values = private$Pvalues, 
-           date = private$Pdate, 
+           date = date2str(private$Pdate),
            eq_function = private$Pfunc2str(private$Peq_function)
       )
     },
@@ -84,27 +87,27 @@ paramComput <- R6::R6Class(
       if(def$class != 'paramComput')
         stop('Wrong "class" attribute')
       private$Pvalues = def$values
-      private$Pdate = def$date
+      private$Pdate = str2date(def$date)
       private$Peq_function = private$Pstr2func(def$eq_function)
     },
     writeJSONDef = function(file = NULL){
       r <- self$getDefinition()
       if (is.null(file)){
-        jsonlite::toJSON(x = r, pretty = TRUE)
+        jsonlite::toJSON(x = r, pretty = TRUE, null = 'null', na = 'null', auto_unbox = TRUE)
       } else {
-        jsonlite::write_json(x = r, path = file, pretty = TRUE)
+        jsonlite::write_json(x = r, path = file, pretty = TRUE, auto_unbox = TRUE)
       }
     },
     loadJSONDef = function(strJSON = NULL, file = NULL) {
       if (!is.null(str)) {
-        l <- jsonlite::fromJSON(strJSON)
+        l <- jsonlite::fromJSON(strJSON, simplifyVector = TRUE)
       } else {
-        l <- jsonlite::read_json(path = file)
+        l <- jsonlite::read_json(path = file, simplifyVector = TRUE)
       }
       if(l$class != 'paramComput')
         stop('Wrong "class" attribute')
       private$Pvalues = l$values
-      private$Pdate = l$date
+      private$Pdate = str2date(l$date)
       private$Peq_function = private$Pstr2func(l$eq_function)
     }
    )

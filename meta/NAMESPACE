@@ -1,4 +1,5 @@
 import(jsonlite)
+import(filelock)
 importFrom(R6, R6Class) 
 importFrom(utils, globalVariables) 
 export(paramComput)

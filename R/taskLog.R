@@ -7,8 +7,8 @@ taskLog <- R6::R6Class(
   public = list
   (
    initialize = function() {},
-   addEntry = function(id=NULL, name = NULL, descr = NULL,
-                        notes = NULL, fileName = NULL,
+   addEntry = function(id=NULL, name = '', descr = '',
+                        notes = '', fileName = '',
                         RobjectNames = c(), depends = c()) {
      if (is.null(id)) {
        id <- paste0("TSK", length(private$log) + 1)
@@ -19,28 +19,27 @@ taskLog <- R6::R6Class(
      }
      #TODO: add code to check dependencies
      x <- list(id = id, name = name, descr = descr, 
-                               time_init = date(), time_end = NULL, 
-                               notes = notes, fileName = fileName,
-                               RobjectNames = RobjectNames, 
-                               depends = depends) 
-     private$log[[id]] <- lapply(x, FUN = function(y)ifelse(is.null(y), character(0), y))
+               time_init = Sys.time(), time_end = NA, 
+               notes = notes, fileName = fileName,
+               RobjectNames = RobjectNames, 
+               depends = depends) 
+     private$log[[id]] <- x
    },
    closeEntry = function(id){
      if (!(id %in% names(private$log))){
        stop("event doesn't exist")
      }
-     private$log[[id]]$time_end  <-  date()
+     private$log[[id]]$time_end  <-  Sys.time()
    },
    log_tabular = function(){
      y <- lapply(private$log, 
             FUN = function(x){
-              x <- lapply(x, FUN = function(y)ifelse(is.null(y), '-', y))
               data.frame(
                          id =x$id,
                          name =x$name,
                          descr =x$descr,
-                         time_init =x$time_init,
-                         time_end =x$time_end,
+                         time_init = date2str(x$time_init),
+                         time_end  = date2str(x$time_end),
                          notes =x$notes,
                          fileName =x$fileName,
                          RobjectNames = paste(x$RobjectNames, collapse = ', '),
@@ -49,10 +48,29 @@ taskLog <- R6::R6Class(
      )
      do.call(rbind, y)
    },
-   getLog = function(){ private$log },
+   getLog = function(){ 
+     # construct a version where the dates are in
+     # string format
+     x <- lapply(private$log, 
+                FUN = function(y){
+                  y$time_init  <- date2str(y$time_init)
+                  y$time_end  <- date2str(y$time_end) 
+                  return(y)
+                }
+     )
+     return(x)
+   },
    setLog= function(x){
+     #convert string dates to POSIX
+     x <- lapply(x, 
+                FUN = function(y){
+                  y$time_init  <- str2date(y$time_init)
+                  y$time_end  <-  str2date(y$time_end) 
+                  return(y)
+                }
+     )
      private$log <- x
-   }
+   },
+   test = function()private$log
   )
-     
 )
