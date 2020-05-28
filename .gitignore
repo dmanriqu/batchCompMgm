@@ -1,4 +1,6 @@
 tags
+RTAGS
+Rtags
 rtags
 ipch
 *.d
@@ -20,3 +22,5 @@ cache
 .Rproj.user
 .Rhistory
 tmp
+Session.vim
+.Rhistory
