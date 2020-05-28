@@ -24,7 +24,7 @@ b$writeJSONDef()
 b
 (jsb  <- b$writeJSONDef())
 b$loadJSONDef(js)
-b$getDefinition()
+b$getListDefinition()
 b$writeJSONDef()
 a == b
 dput(a$values) 
@@ -48,20 +48,42 @@ x$log_tabular()
 x$closeEntry('e3')
 x$log_tabular()
 
-batch <- batchComp$new(a)
+batch <- batchComp$new(a, file_name_rule = 'batch_<id>_mean_<mean>.json')
 batch$addTask(id = 't1', name = 'task1', descr = 'uno')
 batch$addTask(id = 't2', name = 'task2', descr = 'dos', notes = "not sure what's going on")
 batch$addTask(id = 't3', name = 'task3', descr = 'dos', notes = "not sure what's going on", depends = c('t1', 't2'))
-
-(y  <- batch$export())
+batch$completeTask('t1')
+batch$filename
+(y  <- batch$getJSON())
 
 a
 
 (x <- jsonlite::fromJSON(y))
 x
-batch$export()
-(batch$export(file = 'tmp/batch1.json'))
-batch$import(file = 'tmp/batch1.json')
+batch$getJSON()
+(batch$write(file = 'tmp/batch1.json'))
+batch$read(file = 'tmp/batch1.json')
 batch$log$test()  
 batch$log$getLog()
 batch
+
+#log merging
+self <- taskLog$new()
+self$addEntry(id = "e1", name = "segunda")
+self$addEntry(id = "e2", name = "segunda", RobjectNames = c("uno", "dos"))
+def <- self$getLog()
+self$addEntry(id = "e4", name = "segunda", RobjectNames = c("uno", "dos"))
+
+other <- taskLog$new()
+other$setLog(def)
+other$closeEntry('e2')
+other$addEntry('e5', name = 'cinco' )
+other$log_tabular_raw()
+
+self$logMerge(other)
+self$log_tabular_raw()
+o <- other$log_tabular_raw()
+l <- other$getLogRaw()
+l[['e2']]$time_end <-  o[o$id == 'e2', 'time_end']
+
+
