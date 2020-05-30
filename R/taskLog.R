@@ -8,24 +8,27 @@ taskLog <- R6::R6Class(
   active = list(),
   public = list(
     add_entry = function(
-      id=NULL, name = "", descr = "", notes = "", file_name = "",
-      Robject_names = c(), depends = c(), task_prefix = "T") {
-        if (is.null(id)) {
-          id <- paste0(task_prefix, length(private$.log) + 1)
-        }
-        while (id %in% names(private$.log)) {
-          id <- paste0(id, "x")
-          warning("Duplicated task Id. Appending 'x'")
-        }
-       #TODO: add code to check dependencies
-       x <- list(id = id, name = name, descr = descr,
-                 time_init = Sys.time(), time_end = as.POSIXct(NA),
-                 notes = notes, file_name = file_name,
-                 Robject_names = Robject_names,
-                 depends = depends
-       )
-       private$.log[[id]] <- x
-       invisible(self)
+      id = NULL, name = "", descr = "", notes = "", file_name = "",
+      Robject_names = c(), depends = c(), task_prefix = "T"
+    ) {
+      if (is.null(id)) {
+        id <- paste0(task_prefix, length(private$.log) + 1)
+      }
+      while (id %in% names(private$.log)) {
+        id <- paste0(id, "x")
+        warning("Duplicated task Id. Appending 'x'")
+      }
+     #TODO: add code to check dependencies
+     x <- list(
+       id = id, name = name, descr = descr,
+       time_init = Sys.time(), 
+       time_end = as.POSIXct(NA),
+       notes = notes, file_name = file_name,
+       Robject_names = Robject_names,
+       depends = depends
+     )
+     private$.log[[id]] <- x
+     invisible(self)
     },
     close_entry = function(id) {
       if (is.null(private$.log[[id]])) {
@@ -34,22 +37,20 @@ taskLog <- R6::R6Class(
       private$.log[[id]]$time_end  <-  Sys.time()
       invisible(self)
     },
-    # log_tabular_raw = function() {
-    #   self$log_tabular(str_dates = FALSE)
-    # },
     log_tabular = function(str_dates = TRUE) {
-      y <- lapply(private$.log,
-             FUN = function(x) {
-               data.frame(
-                id = x$id, name = x$name, descr = x$descr,
-                time_init = x$time_init, time_end = x$time_end,
-                notes = x$notes,
-                file_name = x$file_name,
-                Robject_names = paste(x$Robject_names, collapse = ", "),
-                depends = paste(x$depends, collapse = ", "),
-                stringsAsfactors = FALSE
-               )
-             }
+      y <- lapply(
+         private$.log,
+         FUN = function(x) {
+           data.frame(
+            id = x$id, name = x$name, descr = x$descr,
+            time_init = x$time_init, time_end = x$time_end,
+            notes = x$notes,
+            file_name = x$file_name,
+            Robject_names = paste(x$Robject_names, collapse = ", "),
+            depends = paste(x$depends, collapse = ", "),
+            stringsAsfactors = FALSE
+           )
+         }
       )
       y <- do.call(rbind, y)
       if (str_dates) {
@@ -58,31 +59,29 @@ taskLog <- R6::R6Class(
       }
       return(y)
     },
-    # get_log_raw = function() {
-    #   self$get_log(str_dates = FALSE)
-    # },
-    get_log = function(str_dates = TRUE) {
+    get_list_defintion = function(str_dates = TRUE) {
       x <- private$.log
       if (str_dates) {
         x <- lapply(
-                    private$.log,
-                    FUN = function(y) {
-                      y$time_init  <- date2str(y$time_init)
-                      y$time_end  <- date2str(y$time_end)
-                      return(y)
-                    }
+          private$.log,
+          FUN = function(y) {
+            y$time_init  <- date2str(y$time_init)
+            y$time_end  <- date2str(y$time_end)
+            return(y)
+          }
         )
       }
       return(x)
     },
     set_log = function(x) {
       #convert string dates to POSIX
-      x <- lapply(x,
-                  FUN = function(y) {
-                    y$time_init  <- str2date(y$time_init)
-                    y$time_end   <- str2date(y$time_end)
-                    return(y)
-                  }
+      x <- lapply(
+        x,
+        FUN = function(y) {
+          y$time_init  <- str2date(y$time_init)
+          y$time_end   <- str2date(y$time_end)
+          return(y)
+        }
       )
       private$.log <- x
     },
@@ -106,7 +105,7 @@ taskLog <- R6::R6Class(
       all <- o$id
       # Now update the log data
       private$.log <- append(
-                             private$.log, other_log_object$get_log(str_dates = FALSE)[n_minus_o]
+        private$.log, other_log_object$get_list_defintion(str_dates = FALSE)[n_minus_o]
       )
       for (i in all) {
         private$.log[[i]]$time_end <- o$time_end[o$id == i]

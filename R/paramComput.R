@@ -3,20 +3,18 @@
 #'
 #' @examples
 paramComput <- R6::R6Class(
-# paramComput <- R6Class(
-  "paramComput",
+  classname = "paramComput",
   private = list(
     .values = NULL,
     .date = NULL,
     .add = function(list_params) {
       if (!is.list(list_params)) {
         stop("Input must be a named list of parameters")
-      }
-      if (sum(unique(names(list_params)) != "") != length(list_params)) {
+      } else if (sum(unique(names(list_params)) != "") != length(list_params)) {
         stop("Every parameter must have a different name")
-      }
-      if (length(intersect(names(self$params), names(list_params))) > 0)
+      } else if (length(intersect(names(self$params), names(list_params))) > 0) {
         stop("Cannot have duplicate parameter names")
+      }
       private$.values <- append(private$.values, list_params)
     },
     .func2str = function(func_str) {
@@ -71,21 +69,22 @@ paramComput <- R6::R6Class(
       cat(paste(names(self$values), self$values, sep = " = "),  sep = "\n")
       cat("Date:", as.character(self$date), "\n")
     },
-    get_list_definition = function() {
+    get_list_definition = function(str_dates = TRUE) {
       list(class = "paramComput", values = private$.values,
-           date = date2str(private$.date),
+           date = ifelse(str_dates, date2str(private$.date), private$.date),
            eq_function = private$.func2str(private$.eq_function)
       )
     },
-    load_list_definition = function(def) {
-      if (def$class != "paramComput")
+    load_list_definition = function(def, str_dates = TRUE) {
+      if (def$class != "paramComput") {
         stop("Wrong 'class' attribute")
+      }
       private$.values <- def$values
-      private$.date <- str2date(def$date)
+      private$.date <- ifelse(str_dates, date2str(def$date), def$date)
       private$.eq_function <- private$.str2func(def$eq_function)
     },
     writeJSON_def = function(file = NULL) {
-      r <- self$get_list_definition()
+      r <- self$get_list_definition(str_dates = TRUE)
       if (is.null(file)) {
         jsonlite::toJSON(x = r, pretty = TRUE, null = "null", na = "null", auto_unbox = TRUE)
       } else {
@@ -104,7 +103,7 @@ paramComput <- R6::R6Class(
       private$.date <- str2date(l$date)
       private$.eq_function <- private$.str2func(l$eq_function)
     }
-   )
+  )
 )
 
 `==.paramComput` <- function(a, b) {
@@ -114,7 +113,6 @@ paramComput <- R6::R6Class(
 `!=.paramComput` <- function(a, b) {
  !a$equal(b)
 }
-
 
 utils::globalVariables(names = c("self", "super"))
 
