@@ -1,3 +1,6 @@
+#TODO: add methods for determining status of tasks
+#TODO: add methods for comparison with external paramComp objects
+
 #Object for storing computaitons
 
 batchComp  <- R6::R6Class ( classname = "batchComp",
@@ -8,20 +11,20 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
     .concurrent = FALSE,
     .loaded = FALSE,
     .file_name = NULL,
-    .get_list_definition = function() {
+    .get_list_definition = function(str_dates = TRUE) {
       list(
          class      = "batchComp",
-         log        = private$.obj_log$get_list_defintion(str_dates = TRUE),
-         parameters = private$.obj_parameters$get_list_definition(),
+         log        = private$.obj_log$get_list_definition(str_dates = TRUE),
+         parameters = private$.obj_parameters$get_list_definition(str_dates = TRUE),
          closed     = private$.closed,
          concurrent = private$.concurrent
       )
     },
-    .set_list_definition = function(def) {
+    .load_list_definition = function(def, str_dates = TRUE) {
       if (def$class != "batchComp") {
         stop("Wrong 'class' attribute")
       }
-      private$.obj_parameters$load_list_definition(def$parameters)
+      private$.obj_parameters$load_list_definition(def$parameters, str_dates = TRUE)
       private$.obj_log$set_log(def$log)
       private$.closed <- def$closed
       private$.concurrent <- def$concurrent
@@ -40,7 +43,12 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
     }
   ),
   public = list(
-    initialize  = function(parameters = NULL, file_name = ifelse(!is.null(parameters), "<id>_batch.json", NULL), concurrent = FALSE) {
+    initialize  = function(
+      parameters = NULL,
+      file_name = ifelse(!is.null(parameters),
+                         "<id>_batch.json", NULL),
+      concurrent = FALSE
+    ) {
       if (!is.null(parameters)) {
         if (!("paramComput" %in% class(parameters))) {
             stop('Argument "parameters" needs to be of class paramComput.')
@@ -52,7 +60,7 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       } else if (!is.null(file_name)) {
         i <- grep(pattern = "<[^\\]]+>", x = file_name, perl = TRUE)
         if (length(i) != 0) {
-          stop("Cannotruse patterned file name if not providing parameters")
+          stop("Cannot use patterned file name if not providing parameters")
         }
         private$.obj_parameters <- paramComput$new()
         private$.file_name <- file_name
@@ -101,12 +109,12 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       invisible(self)
     },
     getJSON = function() {
-      x  <- private$.get_list_definition()
+      x  <- private$.get_list_definition(str_dates = TRUE)
       jsonlite::toJSON(x, pretty = TRUE, null = "null", na = "null", auto_unbox = TRUE)
     },
     loadJSON = function(string) {
       x <- jsonlite::fromJSON(txt = string)
-      private$.set_list_definition(x)
+      private$.load_list_definition(x, str_dates = TRUE)
     },
     write = function(file) {
       #acquire exclusive access to the file
@@ -119,7 +127,7 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
           if (i == 5) stop("Could not accquire file lock")
         }
       }
-      x  <- private$.get_list_definition()
+      x  <- private$.get_list_definition(str_dates = TRUE)
       jsonlite::write_json(x, path = self$filename, pretty = TRUE, null = "null", na = "null", auto_unbox = TRUE)
       filelock::unlock(lock = flock)
     },
@@ -142,11 +150,17 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
         }
       )
       filelock::unlock(lock = flock)
-      private$.set_list_definition(x)
+      private$.load_list_definition(x, str_dates = TRUE)
       invisible(self)
     },
     get_log_object = function() {
       return(private$.obj_log)
+    },
+    same_parameters = function(parameters) {
+      if (is.null(private$.obj_parameters)) {
+        stop("Parameters not loaded")
+      }
+      parameters$equal(private$.obj_parameters)
     }
   )
 )

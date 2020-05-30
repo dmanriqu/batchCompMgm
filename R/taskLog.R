@@ -48,7 +48,7 @@ taskLog <- R6::R6Class(
             file_name = x$file_name,
             Robject_names = paste(x$Robject_names, collapse = ", "),
             depends = paste(x$depends, collapse = ", "),
-            stringsAsfactors = FALSE
+            stringsAsFactors = FALSE
            )
          }
       )
@@ -59,7 +59,7 @@ taskLog <- R6::R6Class(
       }
       return(y)
     },
-    get_list_defintion = function(str_dates = TRUE) {
+    get_list_definition = function(str_dates = TRUE) {
       x <- private$.log
       if (str_dates) {
         x <- lapply(
@@ -105,7 +105,7 @@ taskLog <- R6::R6Class(
       all <- o$id
       # Now update the log data
       private$.log <- append(
-        private$.log, other_log_object$get_list_defintion(str_dates = FALSE)[n_minus_o]
+        private$.log, other_log_object$get_list_definition(str_dates = FALSE)[n_minus_o]
       )
       for (i in all) {
         private$.log[[i]]$time_end <- o$time_end[o$id == i]

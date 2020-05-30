@@ -42,9 +42,9 @@ class(a)
 x <- taskLog$new()
 x$add_entry(id = "e2", name = "segunda")
 x$add_entry(id = "e3", name = "segunda", Robject_names = c("uno", "dos"))
-x$get_list_defintion(str_dates = FALSE)
+x$get_list_definition(str_dates = FALSE)
 
-x$get_list_defintion(str_dates = TRUE)
+x$get_list_definition(str_dates = TRUE)
 x$log_tabular(str_dates = TRUE)
 x$close_entry('e2')
 x$log_tabular(str_dates = TRUE)
@@ -59,7 +59,7 @@ batch$filename
 batch$getJSON()
 batch$write()
 batch$read()
-batch$log$get_list_defintion(str_dates = TRUE)
+batch$log$get_list_definition(str_dates = TRUE)
 batch
 
 aaa <- a$clone()  
@@ -68,9 +68,9 @@ aaa <- a$clone()
 self <- taskLog$new()
 self$add_entry(id = "e1", name = "segunda")
 self$add_entry(id = "e2", name = "segunda", Robject_names = c("uno", "dos"))
-def <- self$get_list_defintion(str_dates = TRUE)
+def <- self$get_list_definition(str_dates = TRUE)
 self$add_entry(id = "e4", name = "segunda", Robject_names = c("uno", "dos"))
-self$get_list_defintion(str_dates = FALSE)
+self$get_list_definition(str_dates = FALSE)
 self$log_tabular(str_dates = FALSE)
 
 other <- taskLog$new()
@@ -79,7 +79,7 @@ other$close_entry('e2')
 other$add_entry('e5', name = 'cinco' )
 
 self$log_merge(other)
-self$get_list_defintion(str_dates = FALSE)
+self$get_list_definition(str_dates = FALSE)
 self$log_tabular(str_dates = FALSE)
 
 # writing with file lock
@@ -116,3 +116,6 @@ x <- snowfall::sfSapply(1:2,
    a = batch$filename 
 )
 batch$read()
+batch
+r <- paramComput$new()
+batch$same_parameters(b)

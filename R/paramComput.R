@@ -15,6 +15,9 @@ paramComput <- R6::R6Class(
       } else if (length(intersect(names(self$params), names(list_params))) > 0) {
         stop("Cannot have duplicate parameter names")
       }
+      if (names(list_params)[1] != "id") {
+        stop("First element of the parameter list must be 'id'")
+      }
       private$.values <- append(private$.values, list_params)
     },
     .func2str = function(func_str) {
@@ -32,6 +35,9 @@ paramComput <- R6::R6Class(
     },
     date = function() {
       return(private$.date)
+    },
+    is_loaded = function() {
+      return(length(private$.values) > 0)
     }
   ),
   public = list(
@@ -40,7 +46,10 @@ paramComput <- R6::R6Class(
     #' @param ... parameters to track.
     #' @examples
     #' x <- paramComput$new(a = 1, b = 2)
-    initialize = function(file = NULL, strJSON  = NULL, parameter_list = NULL, eq_function = function(a, b) {all.equal(a, b)}) {
+    initialize = function(
+      file = NULL, strJSON  = NULL, parameter_list = NULL, 
+      eq_function = function(a, b) {all.equal(a, b)}
+    ) {
       if (!is.null(file)) {
         self$loadJSON_def(file)
         return(self)
@@ -49,16 +58,16 @@ paramComput <- R6::R6Class(
         return(self)
       } else if (!is.null(parameter_list)) {
         private$.add(parameter_list)
+        private$.date <- Sys.time()
+        private$.eq_function <- eq_function
       } else {
-        stop("No initialization parameters provided. Aborting.")
+        # Object created, but not loaded
+        # Check self$is.loaded
+        private$.eq_function <- eq_function
       }
-      if (names(parameter_list)[1] != "id") {
-        stop("First element of the parameter list must be 'id'")
-      }
-      private$.date <- Sys.time()
-      private$.eq_function <- eq_function
     },
     equal = function(obj) {
+      if (!self$is_loaded) stop('Data not loaded in object paramComput')
       if (private$.values$id != obj$values$id) {
         warning("Comparing objects with different ids.")
         return(FALSE)
@@ -70,7 +79,9 @@ paramComput <- R6::R6Class(
       cat("Date:", as.character(self$date), "\n")
     },
     get_list_definition = function(str_dates = TRUE) {
-      list(class = "paramComput", values = private$.values,
+      if (!self$is_loaded) warning ('Data not loaded in object paramComput')
+      list(class = "paramComput", 
+           values = private$.values,
            date = ifelse(str_dates, date2str(private$.date), private$.date),
            eq_function = private$.func2str(private$.eq_function)
       )
@@ -84,11 +95,19 @@ paramComput <- R6::R6Class(
       private$.eq_function <- private$.str2func(def$eq_function)
     },
     writeJSON_def = function(file = NULL) {
+      if (!self$is_loaded) warning ('Data not loaded in object paramComput')
       r <- self$get_list_definition(str_dates = TRUE)
       if (is.null(file)) {
-        jsonlite::toJSON(x = r, pretty = TRUE, null = "null", na = "null", auto_unbox = TRUE)
+        jsonlite::toJSON(
+          x = r, pretty = TRUE, null = "null",
+          na = "null", auto_unbox = TRUE
+        )
       } else {
-        jsonlite::write_json(x = r, path = file, pretty = TRUE, auto_unbox = TRUE)
+        jsonlite::write_json(
+          x = r, path = file,
+          pretty = TRUE,
+          auto_unbox = TRUE
+        )
       }
     },
     loadJSON_def = function(strJSON = NULL, file = NULL) {
