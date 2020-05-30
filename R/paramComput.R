@@ -1,36 +1,39 @@
-#' R6 class for parameters of computation 
+#TODO: add automatic filename and patterns.
+#' R6 class for parameters of computation
 #'
 #' @examples
 paramComput <- R6::R6Class(
 # paramComput <- R6Class(
-  'paramComput',
+  "paramComput",
   private = list(
-    Pvalues= NULL,
-    Pdate = NULL,
-    Padd = function(list_params){
-      if(!is.list(list_params)) stop('Input must be a named list of parameters')
-      if(sum(unique(names(list_params)) != '') != length(list_params)){
-        stop('Every parameter must have a different name')
-      } 
-      if( length(intersect(names(self$params), names(list_params))) > 0)
-        stop('Cannot have duplicate parameter names')
-      private$Pvalues<- append(private$Pvalues, list_params)
+    .values = NULL,
+    .date = NULL,
+    .add = function(list_params) {
+      if (!is.list(list_params)) {
+        stop("Input must be a named list of parameters")
+      }
+      if (sum(unique(names(list_params)) != "") != length(list_params)) {
+        stop("Every parameter must have a different name")
+      }
+      if (length(intersect(names(self$params), names(list_params))) > 0)
+        stop("Cannot have duplicate parameter names")
+      private$.values <- append(private$.values, list_params)
     },
-    Pfunc2str = function(funcStr){
-      paste(deparse(funcStr), collapse = '\n')
+    .func2str = function(func_str) {
+      paste(deparse(func_str), collapse = "")
     },
-    Pstr2func = function(func){
-      eval(parse(text=func))
+    .str2func = function(func) {
+      eval(parse(text = func))
     },
     # THis function will be set during initialization
-    Peq_function = NULL
+    .eq_function = NULL
   ),
   active = list(
-    values = function(){
-        return(private$Pvalues)
+    values = function() {
+        return(private$.values)
     },
-    date = function(){
-      return(private$Pdate)
+    date = function() {
+      return(private$.date)
     }
   ),
   public = list(
@@ -39,90 +42,81 @@ paramComput <- R6::R6Class(
     #' @param ... parameters to track.
     #' @examples
     #' x <- paramComput$new(a = 1, b = 2)
-    initialize = function(file = NULL, strJSON  = NULL, parameter_names = NULL, parameter_list = NULL, eq_function = function(a,b){all.equal(a,b)}){
-      if (!is.null(file)){
-        self$loadJSONDef(file)
+    initialize = function(file = NULL, strJSON  = NULL, parameter_list = NULL, eq_function = function(a, b) {all.equal(a, b)}) {
+      if (!is.null(file)) {
+        self$loadJSON_def(file)
         return(self)
       } else if (!is.null(strJSON)) {
-        self$loadJSONDef(strJSON )
+        self$loadJSON_def(strJSON)
         return(self)
-      } else if (!is.null(parameter_names)) {
-        #create list with parameter names and call private$Padd()
       } else if (!is.null(parameter_list)) {
-        private$Padd(parameter_list)
+        private$.add(parameter_list)
       } else {
-        stop('No initialization parameters provided. Aborting.')
+        stop("No initialization parameters provided. Aborting.")
       }
-      if (names(parameter_list)[1] != 'id') {
-        stop('First element of the parameter list must be "id"')
+      if (names(parameter_list)[1] != "id") {
+        stop("First element of the parameter list must be 'id'")
       }
-      private$Pdate = Sys.time()
-      private$Peq_function = eq_function
+      private$.date <- Sys.time()
+      private$.eq_function <- eq_function
     },
-
-    equal = function(obj){
-      if (private$Pvalues$id != obj$values$id) {
-        warning('Comparing objects with different ids.')
+    equal = function(obj) {
+      if (private$.values$id != obj$values$id) {
+        warning("Comparing objects with different ids.")
         return(FALSE)
       }
-      private$Peq_function(self$values, obj$values)
+      private$.eq_function(self$values, obj$values)
     },
-    print = function(){
-      cat( paste(names(self$values), self$values, sep = ' = '),  sep = '\n')
-      cat('Date:', as.character(self$date), '\n')
+    print = function() {
+      cat(paste(names(self$values), self$values, sep = " = "),  sep = "\n")
+      cat("Date:", as.character(self$date), "\n")
     },
-    # load_values_from_list = function(lista){
-    #   do.call(self$load_values, lista)
-    # },
-    # filename = function(naming_field, rule = '%.rds'){
-    #   gsub(pattern = '%', replacement = private$Pparams[[naming_field]], x = rule)
-    # },
-    getDefinition = function(){
-      list(class = 'paramComput', values = private$Pvalues, 
-           date = date2str(private$Pdate),
-           eq_function = private$Pfunc2str(private$Peq_function)
+    get_list_definition = function() {
+      list(class = "paramComput", values = private$.values,
+           date = date2str(private$.date),
+           eq_function = private$.func2str(private$.eq_function)
       )
     },
-    loadDefinition = function(def){
-      if(def$class != 'paramComput')
-        stop('Wrong "class" attribute')
-      private$Pvalues = def$values
-      private$Pdate = str2date(def$date)
-      private$Peq_function = private$Pstr2func(def$eq_function)
+    load_list_definition = function(def) {
+      if (def$class != "paramComput")
+        stop("Wrong 'class' attribute")
+      private$.values <- def$values
+      private$.date <- str2date(def$date)
+      private$.eq_function <- private$.str2func(def$eq_function)
     },
-    writeJSONDef = function(file = NULL){
-      r <- self$getDefinition()
-      if (is.null(file)){
-        jsonlite::toJSON(x = r, pretty = TRUE, null = 'null', na = 'null', auto_unbox = TRUE)
+    writeJSON_def = function(file = NULL) {
+      r <- self$get_list_definition()
+      if (is.null(file)) {
+        jsonlite::toJSON(x = r, pretty = TRUE, null = "null", na = "null", auto_unbox = TRUE)
       } else {
         jsonlite::write_json(x = r, path = file, pretty = TRUE, auto_unbox = TRUE)
       }
     },
-    loadJSONDef = function(strJSON = NULL, file = NULL) {
+    loadJSON_def = function(strJSON = NULL, file = NULL) {
       if (!is.null(str)) {
         l <- jsonlite::fromJSON(strJSON, simplifyVector = TRUE)
       } else {
         l <- jsonlite::read_json(path = file, simplifyVector = TRUE)
       }
-      if(l$class != 'paramComput')
-        stop('Wrong "class" attribute')
-      private$Pvalues = l$values
-      private$Pdate = str2date(l$date)
-      private$Peq_function = private$Pstr2func(l$eq_function)
+      if (l$class != "paramComput")
+        stop("Wrong 'class' attribute")
+      private$.values <- l$values
+      private$.date <- str2date(l$date)
+      private$.eq_function <- private$.str2func(l$eq_function)
     }
    )
-)  
+)
 
-`==.paramComput` = function(a, b){
+`==.paramComput` <- function(a, b) {
  a$equal(b)
 }
 
-`!=.paramComput` = function(a, b){
+`!=.paramComput` <- function(a, b) {
  !a$equal(b)
 }
 
 
-utils::globalVariables(names = c('self', 'super'))
+utils::globalVariables(names = c("self", "super"))
 
 
 # @description
@@ -131,4 +125,4 @@ utils::globalVariables(names = c('self', 'super'))
 # @return 
 
 # For evaluating a command given as a string in R use eval(parse(text=string))
-# For converting an R object to string use: paste(deparse(obj), collapse = '\n')
+# For converting an R object to string use: paste(deparse(obj), collapse = "\n")
