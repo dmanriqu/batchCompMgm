@@ -50,8 +50,8 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       concurrent = FALSE
     ) {
       if (!is.null(parameters)) {
-        if (!("paramComput" %in% class(parameters))) {
-            stop('Argument "parameters" needs to be of class paramComput.')
+        if (!("paramComp" %in% class(parameters))) {
+            stop('Argument "parameters" needs to be of class paramComp.')
         }
         private$.obj_parameters <- parameters$clone()
         private$.closed <- FALSE
@@ -62,7 +62,7 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
         if (length(i) != 0) {
           stop("Cannot use patterned file name if not providing parameters")
         }
-        private$.obj_parameters <- paramComput$new()
+        private$.obj_parameters <- paramComp$new()
         private$.file_name <- file_name
         self$read()
       } else {
@@ -164,3 +164,4 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
     }
   )
 )
+

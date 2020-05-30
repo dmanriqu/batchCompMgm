@@ -2,8 +2,8 @@
 #' R6 class for parameters of computation
 #'
 #' @examples
-paramComput <- R6::R6Class(
-  classname = "paramComput",
+paramComp <- R6::R6Class(
+  classname = "paramComp",
   private = list(
     .values = NULL,
     .date = NULL,
@@ -45,7 +45,7 @@ paramComput <- R6::R6Class(
     #' Change hair color.
     #' @param ... parameters to track.
     #' @examples
-    #' x <- paramComput$new(a = 1, b = 2)
+    #' x <- paramComp$new(a = 1, b = 2)
     initialize = function(
       file = NULL, strJSON  = NULL, parameter_list = NULL, 
       eq_function = function(a, b) {all.equal(a, b)}
@@ -67,7 +67,7 @@ paramComput <- R6::R6Class(
       }
     },
     equal = function(obj) {
-      if (!self$is_loaded) stop('Data not loaded in object paramComput')
+      if (!self$is_loaded) stop('Data not loaded in object paramComp')
       if (private$.values$id != obj$values$id) {
         warning("Comparing objects with different ids.")
         return(FALSE)
@@ -79,15 +79,15 @@ paramComput <- R6::R6Class(
       cat("Date:", as.character(self$date), "\n")
     },
     get_list_definition = function(str_dates = TRUE) {
-      if (!self$is_loaded) warning ('Data not loaded in object paramComput')
-      list(class = "paramComput", 
+      if (!self$is_loaded) warning ('Data not loaded in object paramComp')
+      list(class = "paramComp", 
            values = private$.values,
            date = ifelse(str_dates, date2str(private$.date), private$.date),
            eq_function = private$.func2str(private$.eq_function)
       )
     },
     load_list_definition = function(def, str_dates = TRUE) {
-      if (def$class != "paramComput") {
+      if (def$class != "paramComp") {
         stop("Wrong 'class' attribute")
       }
       private$.values <- def$values
@@ -95,7 +95,7 @@ paramComput <- R6::R6Class(
       private$.eq_function <- private$.str2func(def$eq_function)
     },
     writeJSON_def = function(file = NULL) {
-      if (!self$is_loaded) warning ('Data not loaded in object paramComput')
+      if (!self$is_loaded) warning ('Data not loaded in object paramComp')
       r <- self$get_list_definition(str_dates = TRUE)
       if (is.null(file)) {
         jsonlite::toJSON(
@@ -116,7 +116,7 @@ paramComput <- R6::R6Class(
       } else {
         l <- jsonlite::read_json(path = file, simplifyVector = TRUE)
       }
-      if (l$class != "paramComput")
+      if (l$class != "paramComp")
         stop("Wrong 'class' attribute")
       private$.values <- l$values
       private$.date <- str2date(l$date)
@@ -125,11 +125,11 @@ paramComput <- R6::R6Class(
   )
 )
 
-`==.paramComput` <- function(a, b) {
+`==.paramComp` <- function(a, b) {
  a$equal(b)
 }
 
-`!=.paramComput` <- function(a, b) {
+`!=.paramComp` <- function(a, b) {
  !a$equal(b)
 }
 

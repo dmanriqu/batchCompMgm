@@ -1,6 +1,6 @@
 rm(list = ls())
 library('batchCompMgm', lib.loc = 'cache')
-a <- paramComput$new(parameter_list = list(id = 'TEST_COMP', mean = 1.0, sd = 1.0, trials =1000))
+a <- paramComp$new(parameter_list = list(id = 'TEST_COMP', mean = 1.0, sd = 1.0, trials =1000))
 batch <- batchComp$new(a, file_name = 'batch_<id>_mean_<mean>.json', concurrent = TRUE)
 batch$add_task(id = 't1', name = 'task1', descr = 'uno')
 batch$add_task(id = 't2', name = 'task2', descr = 'dos')
@@ -21,7 +21,7 @@ x <- snowfall::sfSapply(1:2,
 )
 batch$read()
 batch
-r <- paramComput$new()
+r <- paramComp$new()
 r$writeJSON_def(file = '')
 r$is_loaded
 
@@ -29,7 +29,7 @@ r$is_loaded
 
 
 
-a <- paramComput$new()
+a <- paramComp$new()
 i <- batchCompMgm::batchComp$new(a)
 i$write()
 detach('package:batchCompMgm', unload = TRUE)
