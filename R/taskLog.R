@@ -1,3 +1,4 @@
+#TODO: check the "start" state
 # tasklog object
 
 taskLog <- R6::R6Class(
@@ -22,6 +23,7 @@ taskLog <- R6::R6Class(
      x <- list(
        id = id, name = name, descr = descr,
        time_init = Sys.time(),
+       time_start = as.POSIXct(NA),
        time_end = as.POSIXct(NA),
        notes = notes, file_name = file_name,
        Robject_names = Robject_names,
@@ -43,7 +45,9 @@ taskLog <- R6::R6Class(
          FUN = function(x) {
            data.frame(
             id = x$id, name = x$name, descr = x$descr,
-            time_init = x$time_init, time_end = x$time_end,
+            time_init = x$time_init,
+            time_start = x$time_start,
+            time_end = x$time_end,
             notes = x$notes,
             file_name = x$file_name,
             Robject_names = paste(x$Robject_names, collapse = ", "),
@@ -55,6 +59,7 @@ taskLog <- R6::R6Class(
       y <- do.call(rbind, y)
       if (str_dates) {
         y$time_init <- date2str(y$time_init)
+        y$time_start <- date2str(y$time_start)
         y$time_end  <- date2str(y$time_end)
       }
       return(y)
@@ -66,6 +71,7 @@ taskLog <- R6::R6Class(
           private$.log,
           FUN = function(y) {
             y$time_init  <- date2str(y$time_init)
+            y$time_start  <- date2str(y$time_start)
             y$time_end  <- date2str(y$time_end)
             return(y)
           }
@@ -79,6 +85,7 @@ taskLog <- R6::R6Class(
         x,
         FUN = function(y) {
           y$time_init  <- str2date(y$time_init)
+          y$time_start <- str2date(y$time_start)
           y$time_end   <- str2date(y$time_end)
           return(y)
         }
@@ -87,17 +94,23 @@ taskLog <- R6::R6Class(
     },
     log_merge = function(other_log_object) {
       #common and different events.
-      o <- self$log_tabular(str_dates = FALSE)[, c("id", "time_init", "time_end")]
-      n <- other_log_object$log_tabular(str_dates = FALSE)[, c("id", "time_init", "time_end")]
+      o <- self$log_tabular(str_dates = FALSE)[, c("id", "time_init", "time_start", "time_end")]
+      n <- other_log_object$log_tabular(str_dates = FALSE)[, c("id", "time_init", "time_start", "time_end")]
       common <- intersect(o$id, n$id)
       n_minus_o <- setdiff(n$id, o$id)
       #Update events:
+      o$time_start[is.na(o$time_start)] <- as.POSIXct("1789-07-01 01:00:00 UTC")
+      n$time_start[is.na(n$time_start)] <- as.POSIXct("1789-07-01 01:00:00 UTC")
       o$time_end[is.na(o$time_end)] <- as.POSIXct("1789-07-01 01:00:00 UTC")
       n$time_end[is.na(n$time_end)] <- as.POSIXct("1789-07-01 01:00:00 UTC")
-      harm <- pmax(n[common, "time_end"], o[common, "time_end"])
-      o[common, "time_end"] <- n[common, "time_end"] <- harm
+      harm_start <- pmax(n[common, "time_start"], o[common, "time_start"])
+      harm_end <- pmax(n[common, "time_end"], o[common, "time_end"])
+      o[common, "time_start"] <- n[common, "time_start"] <- harm_start
+      o[common, "time_end"] <- n[common, "time_end"] <- harm_end
       o[o$time_end < as.POSIXct("1789-12-12"), "time_end"] <- as.POSIXct(NA)
       n[n$time_end < as.POSIXct("1789-12-12"), "time_end"] <- as.POSIXct(NA)
+      o[o$time_start < as.POSIXct("1789-12-12"), "time_start"] <- as.POSIXct(NA)
+      n[n$time_start < as.POSIXct("1789-12-12"), "time_start"] <- as.POSIXct(NA)
       # Now add the events in the other log that are missing in the present
       if (length(n_minus_o) > 0) {
         o <- rbind(o, n[n_minus_o, ])
@@ -109,6 +122,7 @@ taskLog <- R6::R6Class(
       )
       for (i in all) {
         private$.log[[i]]$time_end <- o$time_end[o$id == i]
+        private$.log[[i]]$time_start <- o$time_start[o$id == i]
       }
       invisible(self)
     },
