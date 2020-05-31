@@ -25,7 +25,7 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
         stop("Wrong 'class' attribute")
       }
       private$.obj_parameters$load_list_definition(def$parameters, str_dates = TRUE)
-      private$.obj_log$set_log(def$log)
+      private$.obj_log$load_list_definition(def$log)
       private$.closed <- def$closed
       private$.concurrent <- def$concurrent
       invisible(self)
@@ -84,13 +84,13 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       private$.closed  <- TRUE
       invisible(self)
     },
-    add_task = function(id="", name = "", descr = "", 
+    create_task = function(id="", name = "", descr = "", 
                        notes = "", file_name = "", 
                        Robject_names = list(), depends = list()) {
       if (private$.closed) {
         stop("Cannot add more tasks after finishing")
       }
-      private$.obj_log$add_entry(id=id, name = name, descr = descr, notes = notes, file_name = file_name, Robject_names = Robject_names, depends = depends)
+      private$.obj_log$create_task(id=id, name = name, descr = descr, notes = notes, file_name = file_name, Robject_names = Robject_names, depends = depends)
       invisible(self)
     },
     complete_task = function(id = NULL) {
@@ -105,7 +105,7 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       } else if (is.null(id)) {
         stop("Mode is concurrent. Need to specify a task Id")
       }
-      private$.obj_log$close_entry(id)
+      private$.obj_log$finish_task(id)
       invisible(self)
     },
     getJSON = function() {

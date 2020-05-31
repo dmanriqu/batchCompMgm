@@ -8,7 +8,7 @@ taskLog <- R6::R6Class(
   ),
   active = list(),
   public = list(
-    add_entry = function(
+    create_task = function(
       id = NULL, name = "", descr = "", notes = "", file_name = "",
       Robject_names = c(), depends = c(), task_prefix = "T"
     ) {
@@ -32,7 +32,14 @@ taskLog <- R6::R6Class(
      private$.log[[id]] <- x
      invisible(self)
     },
-    close_entry = function(id) {
+    start_task = function(id) {
+      if (is.null(private$.log[[id]])) {
+        stop("event doesn't exist")
+      }
+      private$.log[[id]]$time_start  <-  Sys.time()
+      invisible(self)
+    },
+    finish_task = function(id) {
       if (is.null(private$.log[[id]])) {
         stop("event doesn't exist")
       }
@@ -79,7 +86,7 @@ taskLog <- R6::R6Class(
       }
       return(x)
     },
-    set_log = function(x) {
+    load_list_definition = function(x) {
       #convert string dates to POSIX
       x <- lapply(
         x,
