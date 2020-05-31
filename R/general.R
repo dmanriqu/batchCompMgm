@@ -8,7 +8,10 @@ date2str <- function(date) {
 }
 
 str2date <- function(str_date) {
-  x <- tryCatch(expr = {as.POSIXct(str_date)}, error = function(err){NA})
+  x <- tryCatch(
+    expr = {as.POSIXct(str_date)}, 
+    error = function(err){as.POSIXct(NA)}
+  )
   return(x)
 }
 
@@ -17,6 +20,7 @@ replace_markers <- function(string, data) {
   labels <- unlist(regmatches(x = string, x))
   fields <-  gsub("<([^>]+)>", replacement = '\\1', x =  labels, perl = TRUE)
   subs <- data[fields]
+  if(length(subs) < length(fields)) stop("Substitution fields not found")
   for (i in seq_along(fields)) {
     string <- gsub(pattern = labels[i], replacement = subs[i], x = string)
   }

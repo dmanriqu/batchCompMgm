@@ -98,7 +98,7 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       if (!private$.concurrent && is.null(id)) {
         i <- length(private$.obj_log)
         if (i == 0) {
-          warning ("Task doesn't exist. Ignoring command.")
+          warning("Task doesn't exist. Ignoring command.")
           invisible(self)
         }
         id <- names(private$.obj_log$log)[i]
@@ -110,7 +110,10 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
     },
     getJSON = function() {
       x  <- private$.get_list_definition(str_dates = TRUE)
-      jsonlite::toJSON(x, pretty = TRUE, null = "null", na = "null", auto_unbox = TRUE)
+      jsonlite::toJSON(
+        x, pretty = TRUE, null = "null",
+        na = "null", auto_unbox = TRUE
+      )
     },
     loadJSON = function(string) {
       x <- jsonlite::fromJSON(txt = string)
@@ -120,7 +123,9 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       #acquire exclusive access to the file
       fnlck <- paste0(private$.file_name, ".lock")
       for (i in 1:5) {
-        flock <- filelock::lock(path = fnlck, exclusive = TRUE, timeout = 1000 + runif(n = 1, 0,1000))
+        flock <- filelock::lock(
+          path = fnlck, exclusive = TRUE, timeout = 1000 + runif(n = 1, 0, 1000)
+        )
         if (!is.null(flock)) {
           break
         } else {
@@ -128,14 +133,19 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
         }
       }
       x  <- private$.get_list_definition(str_dates = TRUE)
-      jsonlite::write_json(x, path = self$filename, pretty = TRUE, null = "null", na = "null", auto_unbox = TRUE)
+      jsonlite::write_json(
+        x, path = self$filename, pretty = TRUE,
+        null = "null", na = "null", auto_unbox = TRUE
+      )
       filelock::unlock(lock = flock)
     },
     read = function() {
       #acquire exclusive access to the file
       fnlck <- paste0(private$.file_name, ".lock")
       for (i in 1:5) {
-        flock <- filelock::lock(path = fnlck, exclusive = TRUE, timeout = 1000 + runif(n = 1, 0,1000))
+        flock <- filelock::lock(
+          path = fnlck, exclusive = TRUE, timeout = 1000 + runif(n = 1, 0, 1000)
+        )
         if (!is.null(flock)) {
           break
         } else {

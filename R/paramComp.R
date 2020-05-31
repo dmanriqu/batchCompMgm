@@ -1,12 +1,12 @@
-#TODO: add automatic filename and patterns.
 #' R6 class for parameters of computation
 #'
 #' @examples
 paramComp <- R6::R6Class(
   classname = "paramComp",
+  lock_objects = FALSE,
   private = list(
     .values = NULL,
-    .date = NULL,
+    .date = as.POSIXct(NA),
     .add = function(list_params) {
       if (!is.list(list_params)) {
         stop("Input must be a named list of parameters")
@@ -14,8 +14,7 @@ paramComp <- R6::R6Class(
         stop("Every parameter must have a different name")
       } else if (length(intersect(names(self$params), names(list_params))) > 0) {
         stop("Cannot have duplicate parameter names")
-      }
-      if (names(list_params)[1] != "id") {
+      } else if (names(list_params)[1] != "id") {
         stop("First element of the parameter list must be 'id'")
       }
       private$.values <- append(private$.values, list_params)
@@ -47,27 +46,25 @@ paramComp <- R6::R6Class(
     #' @examples
     #' x <- paramComp$new(a = 1, b = 2)
     initialize = function(
-      file = NULL, strJSON  = NULL, parameter_list = NULL, 
+      file_name = NULL,
+      strJSON  = NULL, parameter_list = NULL,
       eq_function = function(a, b) {all.equal(a, b)}
     ) {
-      if (!is.null(file)) {
-        self$loadJSON_def(file)
+      if (!is.null(file_name)) {
+        self$loadJSON_def(file_name)
         return(self)
       } else if (!is.null(strJSON)) {
         self$loadJSON_def(strJSON)
         return(self)
       } else if (!is.null(parameter_list)) {
         private$.add(parameter_list)
-        private$.date <- Sys.time()
-        private$.eq_function <- eq_function
-      } else {
-        # Object created, but not loaded
-        # Check self$is.loaded
-        private$.eq_function <- eq_function
       }
+      private$.eq_function <- eq_function
+      private$.date <- Sys.time()
+      invisible(self)
     },
     equal = function(obj) {
-      if (!self$is_loaded) stop('Data not loaded in object paramComp')
+      if (!self$is_loaded) stop("Data not loaded in object paramComp")
       if (private$.values$id != obj$values$id) {
         warning("Comparing objects with different ids.")
         return(FALSE)
@@ -79,10 +76,10 @@ paramComp <- R6::R6Class(
       cat("Date:", as.character(self$date), "\n")
     },
     get_list_definition = function(str_dates = TRUE) {
-      if (!self$is_loaded) warning ('Data not loaded in object paramComp')
-      list(class = "paramComp", 
+      if (!self$is_loaded) warning("Data not loaded in object paramComp")
+      list(class = "paramComp",
            values = private$.values,
-           date = ifelse(str_dates, date2str(private$.date), private$.date),
+           date = (if (str_dates) date2str(private$.date) else  private$.date),
            eq_function = private$.func2str(private$.eq_function)
       )
     },
@@ -91,36 +88,41 @@ paramComp <- R6::R6Class(
         stop("Wrong 'class' attribute")
       }
       private$.values <- def$values
-      private$.date <- ifelse(str_dates, date2str(def$date), def$date)
+      private$.date <- (if (str_dates) str2date(def$date) else def$date)
       private$.eq_function <- private$.str2func(def$eq_function)
+      invisible(self)
     },
-    writeJSON_def = function(file = NULL) {
-      if (!self$is_loaded) warning ('Data not loaded in object paramComp')
+    writeJSON_def = function(file_name_pattern = NULL) {
+      if (!self$is_loaded) {
+        warning("Data not loaded in object paramComp")
+        return()
+      }
       r <- self$get_list_definition(str_dates = TRUE)
-      if (is.null(file)) {
+      if (is.null(file_name_pattern) || file_name_pattern == "") {
         jsonlite::toJSON(
           x = r, pretty = TRUE, null = "null",
           na = "null", auto_unbox = TRUE
         )
       } else {
+        file_name <- replace_markers(file_name_pattern, data = private$.values)
         jsonlite::write_json(
-          x = r, path = file,
+          x = r, path = file_name,
           pretty = TRUE,
           auto_unbox = TRUE
         )
       }
     },
-    loadJSON_def = function(strJSON = NULL, file = NULL) {
-      if (!is.null(str)) {
-        l <- jsonlite::fromJSON(strJSON, simplifyVector = TRUE)
+    loadJSON_def = function(strJSON = NULL, file_name = NULL) {
+      if (!is.null(strJSON)) {
+        l <- jsonlite::fromJSON(strJSON)
       } else {
-        l <- jsonlite::read_json(path = file, simplifyVector = TRUE)
+        l <- jsonlite::read_json(path = file_name)
       }
-      if (l$class != "paramComp")
-        stop("Wrong 'class' attribute")
-      private$.values <- l$values
-      private$.date <- str2date(l$date)
-      private$.eq_function <- private$.str2func(l$eq_function)
+      if (l$class != "paramComp") stop("Wrong 'class' attribute")
+      self$load_list_definition(l, str_dates = TRUE)
+    },
+    generate_file_name = function(file_name_pattern = "<id>_param.json") {
+      replace_markers(file_name_pattern, data = private$.values)
     }
   )
 )

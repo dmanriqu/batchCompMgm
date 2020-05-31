@@ -21,7 +21,7 @@ taskLog <- R6::R6Class(
      #TODO: add code to check dependencies
      x <- list(
        id = id, name = name, descr = descr,
-       time_init = Sys.time(), 
+       time_init = Sys.time(),
        time_end = as.POSIXct(NA),
        notes = notes, file_name = file_name,
        Robject_names = Robject_names,
