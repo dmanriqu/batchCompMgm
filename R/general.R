@@ -7,10 +7,10 @@ date2str <- function(date) {
   } else return('')
 }
 
-str2date <- function(str_date) {
+str2date <- function(str_date, na = as.POSIXct(NA)) {
   x <- tryCatch(
     expr = {as.POSIXct(str_date)}, 
-    error = function(err){as.POSIXct(NA)}
+    error = function(err){na}
   )
   return(x)
 }

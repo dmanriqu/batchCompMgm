@@ -141,7 +141,4 @@ utils::globalVariables(names = c("self", "super"))
 # @description
 # @examples
 # @param
-# @return 
-
-# For evaluating a command given as a string in R use eval(parse(text=string))
-# For converting an R object to string use: paste(deparse(obj), collapse = "\n")
+# @return

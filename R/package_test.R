@@ -2,10 +2,10 @@ rm(list = ls())
 library('batchCompMgm', lib.loc = 'cache')
 a <- paramComp$new(parameter_list = list(id = 'TEST_COMP', mean = 1.0, sd = 1.0, trials =1000))
 batch <- batchComp$new(a, file_name = 'batch_<id>_mean_<mean>.json', concurrent = TRUE)
-batch$create_task(id = 't1', name = 'task1', descr = 'uno')
-batch$create_task(id = 't2', name = 'task2', descr = 'dos')
+batch$create_task(id = 't1', name = 'task1', descr = 'uno', auto_start = TRUE)
+batch$create_task(id = 't2', name = 'task2', descr = 'dos', auto_start = TRUE)
 batch
-(batch$complete_task('t1'))
+(batch$finish_task('t1'))
 batch$log$completed('t1')
 batch$log$dependencies('t1')
 batch$write()
@@ -24,7 +24,6 @@ batch
 r <- paramComp$new()
 r$writeJSON_def(file = '')
 r$is_loaded
-
 
 
 
