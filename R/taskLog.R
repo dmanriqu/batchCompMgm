@@ -194,20 +194,44 @@ taskLog <- R6::R6Class(
       }
       return(d[falta])
     },
+    is_task_defined = function(id){
+      return(id %in% names(private$.data))
+    },
     is_task_started = function(id) {
+      if (!self$is_task_defined(id)) return(FALSE)
       e <- private$.data[[id]]$time_start
       return(!is.null(e) & !is.na(e) & ('POSIXct' %in% class(e)))
     },
     is_task_finished = function(id) {
+      if (!self$is_task_defined(id)) return(FALSE)
       e <- private$.data[[id]]$time_end
       return(!is.null(e) & !is.na(e))
     },
     is_task_cleared = function(id) {
+      if (!self$is_task_defined(id)) return(FALSE)
       u <- self$unmet_dependencies(id)
       return(length(u) == 0)
     },
     is_log_in_use = function(id) {
       return(length(private$.data) > 0)
+    },
+    task_unfinish = function(id, I_AM_SURE = FALSE){
+      if(!I_AM_SURE) { stop ("Aborted. You need to explicitly state that you're sure by setting I_AM_SURE = TRUE")}
+      if(!self$is_task_defined(id)){ stop(paste('Aborted. Task', id, 'is not defined.'))}
+      if(!self$is_task_started(id)){ warning(paste('Task', id, 'has not started. Nothing to do.'))}
+      if(self$is_task_finished(id)){ 
+        private$.data[[id]]$time_end  <- NA
+      }
+    },
+    task_unstart = function(id, I_AM_SURE = FALSE){
+      if(!I_AM_SURE) { stop ("Aborted. You need to explicitly state that you're sure by setting I_AM_SURE = TRUE")}
+      if(!self$is_task_defined(id)){ stop(paste('Aborted. Task', id, 'is not defined.'))}
+      if(self$is_task_finished(id)){ 
+        self$task_unfinish(id)
+      }
+      if(self$is_task_started(id)){ 
+        private$.data[[id]]$time_start <- NA
+      }
     }
   )
 )

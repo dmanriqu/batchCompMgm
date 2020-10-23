@@ -26,8 +26,14 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       private$.closed <- def$closed
       invisible(self)
     },
+    .file_lock_name = function(file_name){
+      d <- dirname(file_name)
+      b <- basename(file_name)
+      fnlck <-  paste0(d,'/~',b , '.lock')
+      return(fnlck)
+    },
     .acquire_file_lock = function(file_name, timeout = 1000, retries = 5){
-      fnlck <- paste0("~", file_name, ".lock")
+      fnlck <-  private$.file_lock_name(file_name)
       for (i in 1:retries) {
         flock <- filelock::lock(
           path = fnlck, exclusive = TRUE, timeout = timeout + runif(n = 1, 0, 1000)
@@ -54,6 +60,11 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       x <- jsonlite::read_json(path = file_name)
       private$.load_list_definition(x, str_dates = TRUE)
       invisible(self)
+    },
+    .validate_id = function(id){
+      #requirements for id.
+      if(!is.character(id)) return('Task id must be of type character')
+      return('OK')
     }
   ),
   active = list(
@@ -128,6 +139,8 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       if (private$.closed) {
         stop("Cannot add more tasks after finishing")
       }
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop (v)
       private$.obj_log$create_task(
         id = id, name = name, descr = descr, notes = notes,
         file_name = file_name, Robject_names = Robject_names,
@@ -136,6 +149,10 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       invisible(self)
     },
     finish_task = function(id = NULL) {
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop(v)
+      if (!self$is_task_defined(id)) stop (paste('Task', id, 'not defined. Cannot finish it.'))
+      if (!self$is_task_started(id)) stop (paste('Task', id, 'not started. Cannot finish it.'))
       private$.obj_log$finish_task(id)
       invisible(self)
     },
@@ -146,16 +163,31 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       private$.obj_log$start_task(id)
       invisible(self)
     },
+    is_task_defined = function(id) {
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop(v)
+      private$.obj_log$is_task_defined(id)
+    },
     is_task_started = function(id) {
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop(v)
       private$.obj_log$is_task_started(id)
     },
     is_task_finished = function(id) {
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop(v)
       private$.obj_log$is_task_finished(id)
     },
     is_task_cleared = function(id) {
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop(v)
       private$.obj_log$is_task_cleared(id)
     },
     start_when_ready = function(id, poll_interval = 10, timeout = Inf) {
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop(v)
+      if (!self$is_task_defined(id)) stop(paste('Start task', id, 'not defined. Cannot start.'))
+      if (!self$is_task_started(id)) warning(paste('Task', id, 'was already started.'))
       p1 <- Sys.time()
       while (!private$.obj_log$is_task_cleared(id)) {
         if (Sys.time() - p1 > timeout) {
@@ -212,7 +244,7 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       l <- private$.obj_log$get_list_definition()
       o <- taskLog$new()
       o$load_list_definition(l)
-      lock <- private$.acquire_file_lock(private$.file_name)
+      flock <- private$.acquire_file_lock(private$.file_name)
       tryCatch(
         {
           private$.read(private$.file_name)
@@ -220,12 +252,27 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
           private$.write(private$.file_name)
         }, 
         finally = function() {
-          private$.release_file_lock(lock)
+          private$.release_file_lock(flock)
         }
       )
-      private$.release_file_lock(lock)
+      private$.release_file_lock(flock)
       invisible(self)
+    },
+    clean_lockfile = function(){
+      fn <- private$.file_lock_name(self$filename)
+      if (file.exists(fn)){ file.remove(fn) }
     }
+ #,
+ #  Good intentions, but this could cause inconsistencies when
+ #  operating in concurrent settings
+ #   task_unfinish = function(id, I_AM_SURE = FALSE){
+ #     private$.obj_log$task_unfinish(id, I_AM_SURE)
+ #     invisible(self)
+ #   },
+ #   task_unstart= function(id, I_AM_SURE = FALSE){
+ #     private$.obj_log$task_unstart(id, I_AM_SURE)
+ #     invisible(self)
+ #   }
   )
 )
 
