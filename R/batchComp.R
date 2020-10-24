@@ -4,6 +4,7 @@
 batchComp  <- R6::R6Class ( classname = "batchComp",
   private = list(
     .obj_log = NULL, 
+    .auto_update = FALSE,
     .obj_parameters = NULL,
     .closed = FALSE,
     .loaded = FALSE,
@@ -84,7 +85,8 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       file_name = NULL, 
         # ifelse(!is.null(parameters), "<id>_batch.json", NULL),
       concurrent = FALSE,
-      overwrite_file = FALSE
+      overwrite_file = FALSE,
+      auto_update = FALSE
     ) {
       if (!is.null(parameters)) {
         # Case: construct new object from list of parameters.
@@ -120,6 +122,7 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       } else {
         stop("No construction parameters. Cannot create object")
       }
+      private$.auto_update = auto_update
       invisible(self)
     },
     print = function() {
@@ -237,9 +240,13 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
         warning("Changed attached file from ", private$.file_name, " to ", file_name)
       } 
     },
-    update = function() {
+    update = function(overwrite = FALSE) {
       if (is.null(private$.file_name)) {
         stop("No attached file set. Use save_as() for setting one")
+      }
+      if (overwrite){
+        self$save_as(self$filename, overwrite_file = TRUE)
+        invisible(self)
       }
       l <- private$.obj_log$get_list_definition()
       o <- taskLog$new()
@@ -261,18 +268,23 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
     clean_lockfile = function(){
       fn <- private$.file_lock_name(self$filename)
       if (file.exists(fn)){ file.remove(fn) }
-    }
- #,
- #  Good intentions, but this could cause inconsistencies when
- #  operating in concurrent settings
- #   task_unfinish = function(id, I_AM_SURE = FALSE){
- #     private$.obj_log$task_unfinish(id, I_AM_SURE)
- #     invisible(self)
- #   },
- #   task_unstart= function(id, I_AM_SURE = FALSE){
- #     private$.obj_log$task_unstart(id, I_AM_SURE)
- #     invisible(self)
- #   }
+    },
+    auto_update_on = function(){
+      private$.auto_update <- TRUE
+      message('Auto-update on.')
+    },
+    auto_update_off = function(){
+      private$.auto_update <- FALSE
+      message('Auto-update off.')
+    },
+   task_unfinish = function(id, I_AM_SURE = FALSE){
+     private$.obj_log$task_unfinish(id, I_AM_SURE)
+     invisible(self)
+   },
+   task_unstart= function(id, I_AM_SURE = FALSE){
+     private$.obj_log$task_unstart(id, I_AM_SURE)
+     invisible(self)
+   }
   )
 )
 

@@ -7,7 +7,58 @@ taskLog <- R6::R6Class(
    .concurrent = FALSE,
    .exists = function(id) {
      return(!is.null(private$.data[[id]]))
-   }
+   },
+   .desc = function(l, node, check = node){
+     #Determine all the nodes up the line from this one
+     # Also evaluates if there's a circular reference
+     a <- l[[node]]
+     if (check %in% a){
+       stop('circular reference!')
+     }
+     li <- c()
+     if (is.null(a)) return(NULL)
+     for (n in a){
+       #recursive call!
+       r <- private$.desc(l, n, check)
+       li <- append(li,r)
+     }
+     return(unique(append(li, a)))
+   },
+   .downtheline = function(l, node, check = node){
+     #Determine all the nodes in a tree down the line from node.
+     asc1 <- function(lst, node){
+       #WHich nodes list 'node' as a requisite
+       res <- as.character()
+       for (i in seq_along(lst)){
+         if (node %in% lst[[i]]) {
+           res <- append(names(lst[i]), res)
+         }
+       }
+       return(res)
+     }
+     a <- asc1(l, node)
+     if (check %in% a){
+       stop('circular reference detected!')
+     }
+     li <- c()
+     if (is.null(a)) return(NULL)
+     for (n in a){
+       #Recursive call!
+       r <- private$.downtheline(l, n, node)
+       li <- append(li,r)
+     }
+     return(unique(append(li, a)))
+    },
+    .task_unfinish = function(id, I_AM_SURE = FALSE){
+      if(self$is_task_finished(id)){ 
+        private$.data[[id]]$time_end  <- NA
+      }
+    },
+    .task_unstart = function(id, I_AM_SURE = FALSE){
+      if(self$is_task_started(id)){ 
+        private$.data[[id]]$time_start <- NA
+      }
+    }
   ),
   active = list(
     concurrent = function() {
@@ -30,15 +81,11 @@ taskLog <- R6::R6Class(
       } else if (id %in% names(private$.data)) {
         stop("Task name '", id, "'already in use")
       }
-      # while (id %in% names(private$.data)) {
-      #   id <- paste0(id, "x")
-      #   warning("Duplicated task Id. Appending 'x'")
-      # }
-      # allow to depend on undefined events.
-      # nex <- sapply(depends, FUN = function(x)!private$.exists(x))
-      # if (any(nex)){
-      #   stop("Dependency event(s) ", paste(depends[nex], collapse = ', '), "not defined")
-      # }
+      # check if dependencies are correct.
+      #  this will throw an error if it detects a circular reference
+      dep_tree <- lapply(self$get_list_definition()$log,function(x)as.character(x$depends))      
+      dep_tree[[id]] <- depends
+      private$.desc(dep_tree, node = id, check = id)
       x <- list(
         id = id, name = name, descr = descr,
         time_init = Sys.time(),
@@ -215,23 +262,48 @@ taskLog <- R6::R6Class(
     is_log_in_use = function(id) {
       return(length(private$.data) > 0)
     },
-    task_unfinish = function(id, I_AM_SURE = FALSE){
-      if(!I_AM_SURE) { stop ("Aborted. You need to explicitly state that you're sure by setting I_AM_SURE = TRUE")}
-      if(!self$is_task_defined(id)){ stop(paste('Aborted. Task', id, 'is not defined.'))}
-      if(!self$is_task_started(id)){ warning(paste('Task', id, 'has not started. Nothing to do.'))}
-      if(self$is_task_finished(id)){ 
-        private$.data[[id]]$time_end  <- NA
-      }
+    get_dependency_tree  = function(id){
+      dep_tree <- lapply(self$get_list_definition()$log,function(x)as.character(x$depends))      
+      return(dep_tree)
+    },
+    get_all_requisite_tasks = function(id){
+      dep_tree <- self$get_dependency_tree(id)
+      private$.desc(dep_tree, id)
+    },
+    get_all_dependent_tasks = function(id){
+      dep_tree <- self$get_dependency_tree(id)
+      private$.downtheline(dep_tree, id)
     },
     task_unstart = function(id, I_AM_SURE = FALSE){
-      if(!I_AM_SURE) { stop ("Aborted. You need to explicitly state that you're sure by setting I_AM_SURE = TRUE")}
-      if(!self$is_task_defined(id)){ stop(paste('Aborted. Task', id, 'is not defined.'))}
-      if(self$is_task_finished(id)){ 
-        self$task_unfinish(id)
+      if(private$.concurrent) stop('Cannot undo changes to tasks while in concurrent mode')
+      if (!self$is_task_started(id)){
+        stop(paste('Task', id, 'has not started. Cannot unstart.'))
       }
-      if(self$is_task_started(id)){ 
-        private$.data[[id]]$time_start <- NA
+      if (self$is_task_finished(id)){
+        self$task_unfinish(id, I_AM_SURE = I_AM_SURE)
       }
+      private$.task_unstart(id, I_AM_SURE = I_AM_SURE)
+    },
+    task_unfinish = function(id, I_AM_SURE = FALSE){ 
+      if(private$.concurrent) stop('Cannot undo changes to tasks while in concurrent mode')
+      if(!self$is_task_defined(id)) {
+        stop(paste('Task', id, 'is not defined. Cannot unfinish.'))
+      } else if(!self$ is_task_finished(id)) {
+        stop(paste('Task', id, 'has not finished yet. Cannot unfinish.'))
+      }
+      #have to unfinish all tasks that depend on this one
+      dep <- append(id, self$get_all_dependent_tasks(id))
+      for (t in dep){
+        private$.task_unfinish(t, I_AM_SURE = I_AM_SURE)
+      }
+    },
+    task_undefine = function(id, I_AM_SURE = FALSE){
+      if(private$.concurrent) stop('Cannot undo changes to tasks while in concurrent mode')
+      warning('not implemented.')
+    },
+    change_scheduling_mode = function(concurrent = !private$.concurrent){
+      private$.concurrent <- concurrent
+      message('Scheduling mode is now: ', ifelse(concurrent, 'concurrent', 'sequential'))
     }
   )
 )
