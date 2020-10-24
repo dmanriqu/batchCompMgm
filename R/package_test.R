@@ -66,10 +66,12 @@ x <- snowfall::sfSapply(tasks,
    a = batch$filename 
 )
    x
-batch$save_as(batch$filename, overwrite_file = TRUE)
-batch
+batch$update()
+batch$set_concurrent_off()
 batch$get_log_object()$task_unfinish('1.3', I_AM_SURE = FALSE)
 batch$get_log_object()$task_unstart('1.3', I_AM_SURE = FALSE)
+batch
+batch$save_as(batch$filename, overwrite_file = TRUE)
 batch$update()
 batch
 r <- paramComp$new()

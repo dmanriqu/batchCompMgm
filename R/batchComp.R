@@ -1,5 +1,4 @@
-
-#Object for storing computaitons
+#Object for storing computations
 
 batchComp  <- R6::R6Class ( classname = "batchComp",
   private = list(
@@ -269,11 +268,11 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       fn <- private$.file_lock_name(self$filename)
       if (file.exists(fn)){ file.remove(fn) }
     },
-    auto_update_on = function(){
+    set_auto_update_on = function(){
       private$.auto_update <- TRUE
       message('Auto-update on.')
     },
-    auto_update_off = function(){
+    set_auto_update_off = function(){
       private$.auto_update <- FALSE
       message('Auto-update off.')
     },
@@ -284,6 +283,12 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
    task_unstart= function(id, I_AM_SURE = FALSE){
      private$.obj_log$task_unstart(id, I_AM_SURE)
      invisible(self)
+   },
+   set_concurrent_on = function(){
+     private$.obj_log$change_scheduling_mode(concurrent = TRUE)
+   },
+   set_concurrent_off = function(){
+     private$.obj_log$change_scheduling_mode(concurrent = FALSE)
    }
   )
 )

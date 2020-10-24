@@ -88,4 +88,5 @@ install: | cache/
 clean :
 	rm -rf output/
 	rm -rf cache/
+	rm -f *.lock
 
