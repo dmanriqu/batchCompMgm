@@ -4,7 +4,7 @@
 R_PACK      = batchCompMgm
 
 R_CODE1_LOC = R
-R_CODE1 = paramComp.R batchComp.R taskLog.R general.R
+R_CODE1 = paramComp.R paramBatchComp.R Comp.R taskLog.R general.R
 
 R_MAN1_LOC = man
 R_MAN1 = 

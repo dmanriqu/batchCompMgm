@@ -1,6 +1,6 @@
 #Object for storing computations
 
-batchComp  <- R6::R6Class ( classname = "batchComp",
+Comp  <- R6::R6Class ( classname = "Comp",
   private = list(
     .obj_log = NULL, 
     .auto_update = FALSE,
@@ -185,6 +185,9 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
       if (v != 'OK') stop(v)
       private$.obj_log$is_task_cleared(id)
     },
+    is_batch_of_trials = function(){
+     return('paramBatchComp' %in% class(private$.obj_parameters))
+    },
     start_when_ready = function(id, poll_interval = 10, timeout = Inf) {
       v <- private$.validate_id(id)
       if (v != 'OK') stop(v)
@@ -289,6 +292,23 @@ batchComp  <- R6::R6Class ( classname = "batchComp",
    },
    set_concurrent_off = function(){
      private$.obj_log$change_scheduling_mode(concurrent = FALSE)
+   },
+  # Functions for batch of trials. Requires parameter of class paramBatchComp
+   generate_params_for_trials = function(){
+     if (!self$is_batch_of_trials())
+       stop('Parameters are not a batch definition')
+     self$params$get_params_for_trials() 
+   },
+   generate_tasks_from_trials = function(){
+     if (!self$is_batch_of_trials())
+       stop('Parameters are not a batch definition')
+     for (t in private$.obj_parameters$values$trials){
+       self$create_task(
+         id = as.character(t),
+         notes = paste('Created automatically from trial', t),
+         auto_start = FALSE
+       )
+     }
    }
   )
 )

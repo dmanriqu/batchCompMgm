@@ -46,12 +46,12 @@ paramComp <- R6::R6Class(
     #' @examples
     #' x <- paramComp$new(a = 1, b = 2)
     initialize = function(
-      file_name = NULL,
+      load_from_file = NULL,
       strJSON  = NULL, parameter_list = NULL,
       eq_function = function(a, b) {all.equal(a, b)}
     ) {
-      if (!is.null(file_name)) {
-        self$loadJSON_def(file_name)
+      if (!is.null(load_from_file)) {
+        self$loadJSON_def(load_from_file)
         return(self)
       } else if (!is.null(strJSON)) {
         self$loadJSON_def(strJSON)
