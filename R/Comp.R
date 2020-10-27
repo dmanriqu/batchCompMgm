@@ -8,19 +8,31 @@ Comp  <- R6::R6Class ( classname = "Comp",
     .closed = FALSE,
     .loaded = FALSE,
     .file_name = NULL,
+    .read_parameters = function (param_list_def, str_dates = TRUE){
+      if (!("paramComp" %in% param_list_def$class)){
+        stop("Parameters must be of class paramComp")
+      } else if ("paramBatchComp" %in% param_list_def$class) {
+        .obj_parameters = paramBatchComp$new()
+      } else {
+        .obj_parameters = paramComp$new()
+      }
+      #DEBUG
+      private$.obj_parameters$load_list_definition(def = param_list_def, str_dates = TRUE)
+    },
     .get_list_definition = function(str_dates = TRUE) {
       list(
-         class      = "batchComp",
+         class      = class(self),
          parameters = private$.obj_parameters$get_list_definition(str_dates = TRUE),
          closed     = private$.closed,
          log        = private$.obj_log$get_list_definition(str_dates = TRUE)
       )
     },
     .load_list_definition = function(def, str_dates = TRUE) {
-      if (def$class != "batchComp") {
+      if (!("Comp" %in% def$class)) {
         stop("Wrong 'class' attribute")
       } 
-      private$.obj_parameters$load_list_definition(def$parameters, str_dates = TRUE)
+      #private$.obj_parameters$load_list_definition(def$parameters, str_dates = TRUE)
+      private$.read_parameters(def$parameters, str_dates = TRUE)
       private$.obj_log$load_list_definition(def$log)
 
       private$.closed <- def$closed
@@ -112,7 +124,7 @@ Comp  <- R6::R6Class ( classname = "Comp",
         if (length(i) != 0) {
           stop("Cannot use patterned file name if not providing parameters")
         }
-        private$.obj_parameters <- paramComp$new()
+        #private$.obj_parameters <- paramComp$new()
         private$.obj_log <- taskLog$new()
         private$.file_name <- file_name
         l <- private$.acquire_file_lock(file_name = file_name)

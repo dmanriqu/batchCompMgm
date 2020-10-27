@@ -72,19 +72,20 @@ paramComp <- R6::R6Class(
       private$.eq_function(self$values, obj$values)
     },
     print = function() {
+      cat('Object class: [', class(self), ']\n')
       cat(paste(names(self$values), self$values, sep = " = "),  sep = "\n")
       cat("Date:", as.character(self$date), "\n")
     },
     get_list_definition = function(str_dates = TRUE) {
       if (!self$is_loaded) warning("Data not loaded in object paramComp")
-      list(class = "paramComp",
+      list(class = class(self),
            values = private$.values,
            date = (if (str_dates) date2str(private$.date) else  private$.date),
            eq_function = private$.func2str(private$.eq_function)
       )
     },
-    load_list_definition = function(def, str_dates = TRUE) {
-      if (def$class != "paramComp") {
+    load_list_definition = function(def = NULL, str_dates = TRUE) {
+      if (!("paramComp" %in% def$class)) {
         stop("Wrong 'class' attribute")
       }
       private$.values <- def$values
@@ -118,7 +119,7 @@ paramComp <- R6::R6Class(
       } else {
         l <- jsonlite::read_json(path = file_name)
       }
-      if (l$class != "paramComp") stop("Wrong 'class' attribute")
+      if (!("paramComp" %in% l$class)) stop("Wrong 'class' attribute")
       self$load_list_definition(l, str_dates = TRUE)
     },
     generate_file_name = function(file_name_pattern = "<id>_param.json") {
