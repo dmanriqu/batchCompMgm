@@ -99,39 +99,51 @@ Comp  <- R6::R6Class ( classname = "Comp",
       overwrite_file = FALSE,
       auto_update = FALSE
     ) {
-      if (!is.null(parameters)) {
-        # Case: construct new object from list of parameters.
-        if (!("paramComp" %in% class(parameters))) {
-          stop('Argument "parameters" needs to be of class paramComp.')
-        } 
+      fn <- !is.null(file_name)
+      p <- !is.null(parameters)
+      ow <- overwrite_file
+      private$.file_name <- replace_markers(file_name, parameters$values)
+      action <- NULL
+      if (!fn){
+        if (p) 
+          action <- 'create'
+        else
+          stop('Need either parameters or a file to create object.')
+      } else {
+        fe <- file.exists(private$.file_name)
+        if (fe){
+          if (p && ow){
+            action <- 'create'
+          } else {
+            action <- 'read'
+          }
+        } else {
+          if (p){
+            create <- TRUE
+          } else {
+            stop('Filename', private$.file_name, "doesn't exist. Need parameters to create object")
+          }
+        }
+      }
+      if(action == 'create'){
         private$.obj_parameters <- parameters$clone()
         private$.obj_log <- taskLog$new(concurrent = concurrent)
         private$.closed <- FALSE
-        if (!is.null(file_name)) {
-          private$.file_name <- replace_markers(file_name, parameters$values)
-          if(!overwrite_file && file.exists(private$.file_name)) {
-            stop("File '", private$.file_name, "' already exists. Use 'overwrite_file = TRUE' to overwrite")
-          }
+        if (fn){
           l <- private$.acquire_file_lock(file_name = private$.file_name)
           private$.write(private$.file_name)
           private$.release_file_lock(l)
         } else {
-          warning("No file attached. Use 'save_as' to set attached file")
+          warning('Filename not attached. Use "save_as to create one".')
         }
-      } else if (!is.null(file_name)) {
-        # no params. Load data from file
-        i <- grep(pattern = "<[^\\]]+>", x = file_name, perl = TRUE)
-        if (length(i) != 0) {
-          stop("Cannot use patterned file name if not providing parameters")
-        }
-        #private$.obj_parameters <- paramComp$new()
+      } else if (action == 'read'){
         private$.obj_log <- taskLog$new()
-        private$.file_name <- file_name
-        l <- private$.acquire_file_lock(file_name = file_name)
-        private$.read(file_name)
+        l <- private$.acquire_file_lock(file_name = private$.file_name)
+        private$.read(private$.file_name)
         private$.release_file_lock(l)
+        message('Data read from ', private$.file_name)
       } else {
-        stop("No construction parameters. Cannot create object")
+        stop("uh oh... there's a bug")
       }
       private$.auto_update = auto_update
       invisible(self)
@@ -141,6 +153,7 @@ Comp  <- R6::R6Class ( classname = "Comp",
       cat("Parameters:\n")
       private$.obj_parameters$print()
       cat("Scheduling mode:", ifelse(private$.obj_log$concurrent, "Concurrent", "Sequential"),"\n")
+      cat("Attached file:", private$.file_name, '\n')
       cat("------------------------------\n")
       cat("log:\n")
       print(private$.obj_log$log_tabular(str_dates = TRUE), row.names = FALSE)
@@ -249,14 +262,14 @@ Comp  <- R6::R6Class ( classname = "Comp",
       l <- private$.acquire_file_lock(file_name)
       private$.write(file_name)
       private$.release_file_lock(l)
-      private$.file_name <- file_name
-      if (!is.null(private$.file_name)) {
+      if (!is.null(private$.file_name) && file_name != private$.file_name) {
         warning("Changed attached file from ", private$.file_name, " to ", file_name)
       } 
+      private$.file_name <- file_name
     },
     update = function(overwrite = FALSE) {
       if (is.null(private$.file_name)) {
-        stop("No attached file set. Use save_as() for setting one")
+        warning("Nothing done because no attached file set. Use save_as() for setting one")
       }
       if (overwrite){
         self$save_as(self$filename, overwrite_file = TRUE)
