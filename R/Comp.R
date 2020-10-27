@@ -29,7 +29,7 @@ Comp  <- R6::R6Class ( classname = "Comp",
     },
     .load_list_definition = function(def, str_dates = TRUE) {
       if (!("Comp" %in% def$class)) {
-        stop("Wrong 'class' attribute")
+        stop("Wrong 'class' when reading definition of 'Comp' object attribute")
       } 
       #private$.obj_parameters$load_list_definition(def$parameters, str_dates = TRUE)
       private$.read_parameters(def$parameters, str_dates = TRUE)
@@ -119,7 +119,7 @@ Comp  <- R6::R6Class ( classname = "Comp",
           }
         } else {
           if (p){
-            create <- TRUE
+            action <- 'create'
           } else {
             stop('Filename', private$.file_name, "doesn't exist. Need parameters to create object")
           }
