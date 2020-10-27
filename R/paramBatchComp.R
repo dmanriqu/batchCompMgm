@@ -69,15 +69,15 @@ paramBatchComp <- R6::R6Class(
     }
   )
 )
-a <- paramBatchComp$new()
-a <- paramBatchComp$new(
-  parameter_list = list(
-    id = 'TEST_COMP', 
-    mean = c(1.0, 2.0), 
-    sd = c(1.0,10), 
-    trials =1:2,
-    by_trial = c('mean', 'sd')
-  )
-)
-a$get_params_for_trials()
+#a <- paramBatchComp$new()
+#a <- paramBatchComp$new(
+#  parameter_list = list(
+#    id = 'TEST_COMP', 
+#    mean = c(1.0, 2.0), 
+#    sd = c(1.0,10), 
+#    trials =1:2,
+#    by_trial = c('mean', 'sd')
+#  )
+#)
+#a$get_params_for_trials()
 

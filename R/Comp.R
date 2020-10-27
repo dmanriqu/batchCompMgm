@@ -12,9 +12,9 @@ Comp  <- R6::R6Class ( classname = "Comp",
       if (!("paramComp" %in% param_list_def$class)){
         stop("Parameters must be of class paramComp")
       } else if ("paramBatchComp" %in% param_list_def$class) {
-        .obj_parameters = paramBatchComp$new()
+        private$.obj_parameters = paramBatchComp$new()
       } else {
-        .obj_parameters = paramComp$new()
+        private$.obj_parameters = paramComp$new()
       }
       #DEBUG
       private$.obj_parameters$load_list_definition(def = param_list_def, str_dates = TRUE)
