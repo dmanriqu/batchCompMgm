@@ -66,7 +66,7 @@ taskLog <- R6::R6Class(
       objects = NULL
     ) {
       if (id %in% names(private$.data)) {
-        stop("Task name '", id, "'already in use")
+        stop("Task name '", id, "' already in use")
       }
       # check if dependencies are correct.
       #  this will throw an error if it detects a circular reference
@@ -206,7 +206,7 @@ taskLog <- R6::R6Class(
     is_task_cleared = function(id) {
       x <- private$.data[[id]]$get_requisites()
       for (t in x){
-        if (!self$get_task(id)$is_finished()) return (FALSE)
+        if (!self$get_task(t)$is_finished()) return (FALSE)
       }
       return(TRUE)
     },

@@ -1,6 +1,6 @@
 Package: <package_name> 
 Type: Package
-Title: Trial Management 
+Title: Logging an management of batches of computations
 Version: <version>
 Date: <date>
 Author: Daniel Manrique-Vallier

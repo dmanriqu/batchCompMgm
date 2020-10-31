@@ -129,16 +129,30 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
         private$.closed <- FALSE
         if (fn){
           l <- private$.acquire_file_lock(file_name = private$.file_name)
-          private$.write(private$.file_name)
-          private$.release_file_lock(l)
+          e <- tryCatch(
+            {
+              private$.write(private$.file_name)
+              NULL
+            },
+            error = function(e) e,
+            finally =  private$.release_file_lock(l)
+          )
+          if (!is.null(e)) stop(e)
         } else {
           warning('Filename not attached. Use "save_as to create one".')
         }
       } else if (action == 'read'){
         private$.obj_log <- taskLog$new()
         l <- private$.acquire_file_lock(file_name = private$.file_name)
-        private$.read(private$.file_name)
-        private$.release_file_lock(l)
+        e <- tryCatch(
+          {
+            private$.read(private$.file_name)
+            NULL
+          },
+          error = function(e) e,
+          finally =  { private$.release_file_lock(l) }
+        )
+        if(!is.null(e)) stop(e)
         message('Data read from ', private$.file_name)
       } else {
         stop("uh oh... there's a bug")
@@ -213,6 +227,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       if (!self$is_task_defined(id)) stop(paste('Start task', id, 'not defined. Cannot start.'))
       if (!self$is_task_started(id)) warning(paste('Task', id, 'was already started.'))
       p1 <- Sys.time()
+      self$update()
       while (!private$.obj_log$is_task_cleared(id)) {
         if (Sys.time() - p1 > timeout) {
           stop("Timeout reached while waiting for task '", id, "' to clear")
@@ -276,17 +291,17 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       o <- taskLog$new()
       o$load_list_definition(l)
       flock <- private$.acquire_file_lock(private$.file_name)
-      tryCatch(
+      e <- tryCatch(
         {
           private$.read(private$.file_name)
           private$.obj_log$log_merge(o)
           private$.write(private$.file_name)
-        }, 
-        finally = function() {
-          private$.release_file_lock(flock)
-        }
+          NULL
+        },
+        error = function(e){e},
+        finally = { private$.release_file_lock(flock) }
       )
-      private$.release_file_lock(flock)
+      if (!is.null(e)) stop(e)
       invisible(self)
     },
     clean_lockfile = function(){

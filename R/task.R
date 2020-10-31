@@ -140,7 +140,7 @@ CTask <- R6::R6Class (
       if(as_str){
         return(date2str(private$.data$time_start))
       }
-      return(private$.data$start)
+      return(private$.data$time_start)
     },
     get_status = function(){
       if (self$is_finished()) return('finished')
@@ -205,11 +205,11 @@ CTask <- R6::R6Class (
       if (self$get_id() != another$get_id()){
         stop('Not same task id. Aborting update (this: ', private$.data$id, ' | other: ', another$get_id(), ')')
       }
-      if (!self$is_finished() && another$is_finished()) private$.data$time_end <- another$get_time_end()
-      if (!self$is_started() && another$is_started()) private$.data$time_start <- another$get_time_start()
+      if (!self$is_finished() && another$is_finished()) private$.data$time_end <- another$get_time_end(as_str = FALSE)
+      if (!self$is_started() && another$is_started()) private$.data$time_start <- another$get_time_start(as_str = FALSE)
       get <- setdiff(names(another$get_events()), names(self$get_events()))
       for (i in seq_along(get)){
-        private$.data$events[[names(get[i])]] <- another$get_events()[[i]]
+        private$.data$events[[get[i]]] <- another$get_events()[[i]]
       }
     }
   )
