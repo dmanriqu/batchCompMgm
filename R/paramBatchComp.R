@@ -6,11 +6,23 @@ paramBatchComp <- R6::R6Class(
       pt <- p <- self$values
       pos <- which(p$trials == trial)
       for (f in p$by_trial){
+        pt$id <- paste0(self$values$id, '_TRIAL')
         pt$trials <- NULL
         pt$trial <- trial
         pt$by_trial <- NULL
-        pt$id <- paste0(self$values$id, '_TRIAL')
         pt[[f]] <- p[[f]][[pos]]
+      }
+      f <- names(pt)
+      r <- gregexpr(pattern = '_pattern$', f, perl = TRUE)
+      indx_pat <- which(r > 0)
+      for (i in indx_pat){
+        if (!is.null(pt[[i]])){
+          nam <- names(pt)[i]
+          new_cont <- replace_markers( pt[[nam]] , pt)
+          new_name <- gsub(pattern = '_pattern$', x = nam, replacement = '')  
+          pt[[nam]] <- NULL
+          pt[[new_name]] <- new_cont
+        }
       }
       a <- paramComp$new(parameter_list = pt)
       return(a) 
@@ -69,15 +81,16 @@ paramBatchComp <- R6::R6Class(
     }
   )
 )
-#a <- paramBatchComp$new()
-#a <- paramBatchComp$new(
-#  parameter_list = list(
-#    id = 'TEST_COMP', 
-#    mean = c(1.0, 2.0), 
-#    sd = c(1.0,10), 
-#    trials =1:2,
-#    by_trial = c('mean', 'sd')
-#  )
-#)
-#a$get_params_for_trials()
-
+a <- paramBatchComp$new()
+a <- paramBatchComp$new(
+  parameter_list = list(
+    id = 'TEST_COMP', 
+    description = 'mean of <mean>',
+    fn_pattern = './<id>_<trial>.j',
+    mean = c(1.0, 2.0), 
+    sd = c(1.0,10), 
+    trials =1:2,
+    by_trial = c('mean', 'sd')
+  )
+)
+a$get_params_for_trials()

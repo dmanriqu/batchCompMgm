@@ -1,6 +1,6 @@
 # New Object for storing computations
 
-Comp  <- R6::R6Class ( classname = "Comp",
+CompMgm  <- R6::R6Class ( classname = "CompMgm",
   private = list(
     .obj_log = NULL, 
     .auto_update = FALSE,
@@ -28,8 +28,8 @@ Comp  <- R6::R6Class ( classname = "Comp",
       )
     },
     .load_list_definition = function(def, str_dates = TRUE) {
-      if (!("Comp" %in% def$class)) {
-        stop("Wrong 'class' when reading definition of 'Comp' object attribute")
+      if (!("CompMgm" %in% def$class)) {
+        stop("Wrong 'class' when reading definition of 'CompMgm' object attribute")
       } 
       private$.read_parameters(def$parameters, str_dates = TRUE)
       private$.obj_log$load_list_definition(def$log)
