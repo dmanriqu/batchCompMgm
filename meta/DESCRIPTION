@@ -9,7 +9,7 @@ Maintainer: Daniel Manrique-Vallier <dmanriqu@indiana.edu>
 License: GPL (>= 2) 
 Depends: R (>= 3.0.1)
 Imports: jsonlite, R6, utils, filelock
-Collate: general.R paramComp.R paramBatchComp.R taskLog.R Comp.R 
+Collate: general.R paramComp.R paramBatchComp.R task.R taskLog.R Comp.R 
 
 
 

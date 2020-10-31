@@ -1,4 +1,4 @@
-#Object for storing computations
+# New Object for storing computations
 
 Comp  <- R6::R6Class ( classname = "Comp",
   private = list(
@@ -24,17 +24,15 @@ Comp  <- R6::R6Class ( classname = "Comp",
          class      = class(self),
          parameters = private$.obj_parameters$get_list_definition(str_dates = TRUE),
          closed     = private$.closed,
-         log        = private$.obj_log$get_list_definition(str_dates = TRUE)
+         log        = private$.obj_log$get_list_definition()
       )
     },
     .load_list_definition = function(def, str_dates = TRUE) {
       if (!("Comp" %in% def$class)) {
         stop("Wrong 'class' when reading definition of 'Comp' object attribute")
       } 
-      #private$.obj_parameters$load_list_definition(def$parameters, str_dates = TRUE)
       private$.read_parameters(def$parameters, str_dates = TRUE)
       private$.obj_log$load_list_definition(def$log)
-
       private$.closed <- def$closed
       invisible(self)
     },
@@ -156,12 +154,12 @@ Comp  <- R6::R6Class ( classname = "Comp",
       cat("Attached file:", private$.file_name, '\n')
       cat("------------------------------\n")
       cat("log:\n")
-      print(private$.obj_log$log_tabular(str_dates = TRUE), row.names = FALSE)
+      private$.obj_log$print()
     },
   # task control wrappers
     create_task = function(
-      id = NULL, name = "", descr = "", notes = "", file_name = "",
-      Robject_names = c(), depends = c(), task_prefix = "T", auto_start = TRUE
+      id = NULL, description = NULL, comments = NULL, filenames = NULL, params = NULL,
+      objects = NULL, requisites = NULL
     ) {
       if (private$.closed) {
         stop("Cannot add more tasks after finishing")
@@ -169,24 +167,20 @@ Comp  <- R6::R6Class ( classname = "Comp",
       v <- private$.validate_id(id)
       if (v != 'OK') stop (v)
       private$.obj_log$create_task(
-        id = id, name = name, descr = descr, notes = notes,
-        file_name = file_name, Robject_names = Robject_names,
-        depends = depends, auto_start = auto_start 
-      )
+        id = id, description = description, 
+        requisites = requisites, params = params, comments = comments, filenames = filenames, objects = objects)  
       invisible(self)
     },
     finish_task = function(id = NULL) {
       v <- private$.validate_id(id)
       if (v != 'OK') stop(v)
-      if (!self$is_task_defined(id)) stop (paste('Task', id, 'not defined. Cannot finish it.'))
-      if (!self$is_task_started(id)) stop (paste('Task', id, 'not started. Cannot finish it.'))
       private$.obj_log$finish_task(id)
       invisible(self)
     },
     get_log_object = function() {
       return(private$.obj_log)
     },
-    start_task = function(id = NULL) {
+    start_task = function(id) {
       private$.obj_log$start_task(id)
       invisible(self)
     },
@@ -231,8 +225,11 @@ Comp  <- R6::R6Class ( classname = "Comp",
     },
 
   # Close for good
-    finish = function() {
+    close = function() {
       # check that the tasks are completed
+      if (!self$are_all_task_finished()){
+        stop('Cannot close. Tasks', paste(.private$.obj_log$get_all_unfinished_tasks(), collapse = ', '), 'are incomplete.')
+      } 
       private$.closed  <- TRUE
       invisible(self)
     },
@@ -250,7 +247,6 @@ Comp  <- R6::R6Class ( classname = "Comp",
         na = "null", auto_unbox = TRUE
       )
     },
-  # In/Out
     loadJSON = function(string) {
       x <- jsonlite::fromJSON(txt = string)
       private$.load_list_definition(x, str_dates = TRUE)
@@ -270,6 +266,7 @@ Comp  <- R6::R6Class ( classname = "Comp",
     update = function(overwrite = FALSE) {
       if (is.null(private$.file_name)) {
         warning("Nothing done because no attached file set. Use save_as() for setting one")
+        return()
       }
       if (overwrite){
         self$save_as(self$filename, overwrite_file = TRUE)
@@ -324,14 +321,16 @@ Comp  <- R6::R6Class ( classname = "Comp",
        stop('Parameters are not a batch definition')
      self$params$get_params_for_trials() 
    },
-   generate_tasks_from_trials = function(){
+   generate_tasks_from_trials = function(requisites = NULL){
      if (!self$is_batch_of_trials())
        stop('Parameters are not a batch definition')
-     for (t in private$.obj_parameters$values$trials){
+     l <- private$.obj_parameters$get_params_for_trials()
+     for (p in l){
        self$create_task(
-         id = as.character(t),
-         notes = paste('Created automatically from trial', t),
-         auto_start = FALSE
+         id = as.character(p$values$trial),
+         comments = paste('Created automatically from trial', p$values$id),
+         params = p,
+         requisites = requisites
        )
      }
    }

@@ -1,14 +1,11 @@
-# tasklog object
+# New version of TaskLog
 
 taskLog <- R6::R6Class(
   classname = "taskLog",
   private = list(
    .data = list(),
    .concurrent = FALSE,
-   .exists = function(id) {
-     return(!is.null(private$.data[[id]]))
-   },
-   .desc = function(l, node, check = node){
+   .uptheline= function(l, node, check = node){
      #Determine all the nodes up the line from this one
      # Also evaluates if there's a circular reference
      a <- l[[node]]
@@ -19,7 +16,7 @@ taskLog <- R6::R6Class(
      if (is.null(a)) return(NULL)
      for (n in a){
        #recursive call!
-       r <- private$.desc(l, n, check)
+       r <- private$.uptheline(l, n, check)
        li <- append(li,r)
      }
      return(unique(append(li, a)))
@@ -48,16 +45,6 @@ taskLog <- R6::R6Class(
        li <- append(li,r)
      }
      return(unique(append(li, a)))
-    },
-    .task_unfinish = function(id, I_AM_SURE = FALSE){
-      if(self$is_task_finished(id)){ 
-        private$.data[[id]]$time_end  <- NA
-      }
-    },
-    .task_unstart = function(id, I_AM_SURE = FALSE){
-      if(self$is_task_started(id)){ 
-        private$.data[[id]]$time_start <- NA
-      }
     }
   ),
   active = list(
@@ -70,60 +57,67 @@ taskLog <- R6::R6Class(
       private$.concurrent = concurrent
     },
     create_task = function(
-      id = NULL, name = "", descr = "", notes = "", file_name = "",
-      Robject_names = c(), depends = c(), task_prefix = "T",
-      auto_start = (!private$.concurrent)
+      id,
+      description = NULL,
+      requisites =  NULL,
+      params = NULL,
+      comments = NULL,
+      filenames = NULL,
+      objects = NULL
     ) {
-      if (is.null(id) && !private$.concurrent) {
-        id <- paste0(task_prefix, length(private$.data) + 1)
-      } else if (is.null(id)) {
-        stop("Concurrent mode set. Need to provide task id.")
-      } else if (id %in% names(private$.data)) {
+      if (id %in% names(private$.data)) {
         stop("Task name '", id, "'already in use")
       }
       # check if dependencies are correct.
       #  this will throw an error if it detects a circular reference
-      dep_tree <- lapply(self$get_list_definition()$log,function(x)as.character(x$depends))      
-      dep_tree[[id]] <- depends
-      private$.desc(dep_tree, node = id, check = id)
-      x <- list(
-        id = id, name = name, descr = descr,
-        time_init = Sys.time(),
-        time_start = as.POSIXct(NA),
-        time_end = as.POSIXct(NA),
-        notes = notes, file_name = file_name,
-        Robject_names = Robject_names,
-        depends = depends
-      )
-      if (auto_start) {
-        x$time_start <- x$time_init
+      if (!is.null(requisites)){
+        all_deps <- lapply(private$.data, FUN = function(x) x$get_requisites())
+        all_deps[[id]] <- requisites
+        private$.uptheline(l = all_deps, node = id, check = id)
       }
-      private$.data[[id]] <- x
+      private$.data[[id]] <-  CTask$new( 
+        id = id, description = description, requisites = requisites, 
+        params = params, comments = comments, filenames = filenames, 
+        objects = objects
+      )
+      invisible(self)
+    },
+    import_task = function(task){
+      if (!('CTask' %in% class(task))){
+        stop('Object is not a task.')
+      }
+      if (self$is_task_defined(task$get_id())){
+        stop('Task ', task$get_id(), ' already defined.')
+      }
+      private$.data[[task$get_id()]] <- task$clone()
       invisible(self)
     },
     start_task = function(id) {
-      if (!private$.exists(id)) {
+      if (!self$is_task_defined(id)) {
         stop ("Cannot start. Task ", id,  " doesn't exist")
       } else if (self$is_task_started(id)) {
         warning ("Task ", id,  " already started")
       } else if (self$is_task_finished(id)) {
-        warning ("Task ", id,  " already finished")
+        warning ("Task ", id,  " already finished") 
       } else if (!self$is_task_cleared(id)) {
         stop ("Requisites for task ", id, "not completed")
       } else {
-        private$.data[[id]]$time_start  <-  Sys.time()
+        private$.data[[id]]$start()
       }
       invisible(self)
     },
     finish_task = function(id) {
-      if (!private$.exists(id)) {
+      if (!self$is_task_defined(id)) {
         stop ("Cannot finish. Task ", id,  " doesn't exist")
       } else if (!self$is_task_started(id)) {
         stop ("Task ", id,  " not started")
       } else if (self$is_task_finished(id)) {
         warning ("Task ", id,  " already finished")
-      } else {
-        private$.data[[id]]$time_end  <-  Sys.time()
+      } else if (!self$is_task_cleared(id)){
+         stop('Requisites for task ', id, 'not finished.') 
+      } 
+      else {
+        private$.data[[id]]$finish()
       }
       invisible(self)
     },
@@ -156,154 +150,191 @@ taskLog <- R6::R6Class(
       }
       return(y)
     },
-    get_list_definition = function(str_dates = TRUE) {
-      x <- private$.data
-      if (str_dates) {
-        x <- lapply(
-          private$.data,
-          FUN = function(y) {
-            y$time_init  <- date2str(y$time_init)
-            y$time_start  <- date2str(y$time_start)
-            y$time_end  <- date2str(y$time_end)
-            return(y)
-          }
-        )
+    get_list_definition = function() {
+      x <- list(
+        class = class(self),
+        concurrent = private$.concurrent
+      )
+      x$data <- list()
+      for (t in private$.data){
+        x$data[[t$get_id()]] <- t$get_list_definition()
       }
-      return(list(concurrent = private$.concurrent, log = x))
+      return(x)
     },
     load_list_definition = function(def) {
-      #convert string dates to POSIX
-      def$log <- lapply(
-        def$log,
-        FUN = function(y) {
-          y$time_init  <- str2date(y$time_init)
-          y$time_start <- str2date(y$time_start)
-          y$time_end   <- str2date(y$time_end)
-          return(y)
-        }
-      )
-      private$.concurrent <- def$concurrent
-      private$.data <- def$log 
-    },
-    log_merge = function(other_log_object) {
-       #First check if any of the logs are empty
-       if (!other_log_object$is_log_in_use()) {
-         return(self)
-       } else if (!self$is_log_in_use()) {
-         l <- other_log_object$get_list_definition()
-         self$load_list_definition(l)
-         return(self)
-       }
-      #common and different events.
-      o <- self$log_tabular(str_dates = FALSE)[, c("id", "time_init", "time_start", "time_end")]
-      n <- other_log_object$log_tabular(str_dates = FALSE)[, c("id", "time_init", "time_start", "time_end")]
-      common <- intersect(o$id, n$id)
-      n_minus_o <- setdiff(n$id, o$id)
-      #Update events:
-      o$time_start[is.na(o$time_start)] <- as.POSIXct("1789-07-01 01:00:00 UTC")
-      n$time_start[is.na(n$time_start)] <- as.POSIXct("1789-07-01 01:00:00 UTC")
-      o$time_end[is.na(o$time_end)] <- as.POSIXct("1789-07-01 01:00:00 UTC")
-      n$time_end[is.na(n$time_end)] <- as.POSIXct("1789-07-01 01:00:00 UTC")
-      harm_start <- pmax(n[common, "time_start"], o[common, "time_start"])
-      harm_end <- pmax(n[common, "time_end"], o[common, "time_end"])
-      o[common, "time_start"] <- n[common, "time_start"] <- harm_start
-      o[common, "time_end"] <- n[common, "time_end"] <- harm_end
-      o[o$time_end < as.POSIXct("1789-12-12"), "time_end"] <- as.POSIXct(NA)
-      n[n$time_end < as.POSIXct("1789-12-12"), "time_end"] <- as.POSIXct(NA)
-      o[o$time_start < as.POSIXct("1789-12-12"), "time_start"] <- as.POSIXct(NA)
-      n[n$time_start < as.POSIXct("1789-12-12"), "time_start"] <- as.POSIXct(NA)
-      # Now add the events in the other log that are missing in the present
-      if (length(n_minus_o) > 0) {
-        o <- rbind(o, n[n_minus_o, ])
+      if(!('taskLog' %in% def$class)) stop ('Not a definition of a taskLog object. Aborting.')
+      data <- list()
+      for (t in def$data){
+        data[[t$id]] <- CTask$new(id = 'xx') 
+        data[[t$id]]$load_list_definition(t)
       }
-      all <- o$id
-      # Now update the log data
-      private$.data <- append(
-        private$.data, other_log_object$get_list_definition(str_dates = FALSE)$log[n_minus_o]
-      )
-      for (i in all) {
-        private$.data[[i]]$time_end <- o$time_end[o$id == i]
-        private$.data[[i]]$time_start <- o$time_start[o$id == i]
+      private$.concurrent <- def$concurrent 
+      private$.data <- data
+    },
+    log_merge = function(other_log) {
+      #First check if any of the logs are empty
+      if(!self$is_log_in_use()){
+        self$load_list_definition( other_log$get_list_definition() )
+        return()
+      } else if (!other_log$is_log_in_use()) {
+        return()
+      }
+      #common and different tasks.
+      me <- self$get_all_tasks()
+      notme <- other_log$get_all_tasks()
+      common <- intersect(me, notme)
+      newones <- setdiff(notme, me);
+      # Now add the events in the other log that are missing in the present
+      for (id in newones) {
+        self$import_task(other_log$get_task(id))
+      }
+      # For the common ones, we need to update the fields to the latest versions
+      for (id in common) {
+        private$.data[[id]]$update_with_another(other_log$get_task(id))
       }
       invisible(self)
-    },
-    dependencies = function(id) {
-      private$.data[[id]]$depends
-    },
-    unmet_dependencies = function(id) {
-      d <- as.character(self$dependencies(id))
-      if (length(d) == 0) {
-        return(character(0))
-      }
-      falta <-  as.logical(sapply(d, FUN = function(x)!self$is_task_started(x), simplify = TRUE))
-      if (length(falta) == 0) {
-        return(character(0))
-      }
-      return(d[falta])
     },
     is_task_defined = function(id){
       return(id %in% names(private$.data))
     },
     is_task_started = function(id) {
-      if (!self$is_task_defined(id)) return(FALSE)
-      e <- private$.data[[id]]$time_start
-      return(!is.null(e) & !is.na(e) & ('POSIXct' %in% class(e)))
+      return(private$.data[[id]]$is_started())
     },
     is_task_finished = function(id) {
-      if (!self$is_task_defined(id)) return(FALSE)
-      e <- private$.data[[id]]$time_end
-      return(!is.null(e) & !is.na(e))
+      return(private$.data[[id]]$is_finished())
     },
     is_task_cleared = function(id) {
-      if (!self$is_task_defined(id)) return(FALSE)
-      u <- self$unmet_dependencies(id)
-      return(length(u) == 0)
+      x <- private$.data[[id]]$get_requisites()
+      for (t in x){
+        if (!self$get_task(id)$is_finished()) return (FALSE)
+      }
+      return(TRUE)
     },
     is_log_in_use = function(id) {
       return(length(private$.data) > 0)
     },
-    get_dependency_tree  = function(id){
-      dep_tree <- lapply(self$get_list_definition()$log,function(x)as.character(x$depends))      
+    get_dependency_tree  = function(){
+      dep_tree <- lapply(private$.data, FUN = function(x)x$get_requisites())
       return(dep_tree)
     },
     get_all_requisite_tasks = function(id){
-      dep_tree <- self$get_dependency_tree(id)
-      private$.desc(dep_tree, id)
+      x <- self$get_dependency_tree()
+      private$.uptheline(x, id, id)
     },
     get_all_dependent_tasks = function(id){
-      dep_tree <- self$get_dependency_tree(id)
-      private$.downtheline(dep_tree, id)
+      x <- self$get_dependency_tree()
+      private$.downtheline(x, id, id)
+    },
+    get_unmet_requisites = function(id){
+      x <- self$get_all_requisite_tasks(id)
+      return (intersect(x, self$get_all_unfinished_tasks()))
+    },
+    get_task = function(id){
+      return(private$.data[[id]])
     },
     task_unstart = function(id, I_AM_SURE = FALSE){
-      if(private$.concurrent) stop('Cannot undo changes to tasks while in concurrent mode')
-      if (!self$is_task_started(id)){
-        stop(paste('Task', id, 'has not started. Cannot unstart.'))
-      }
-      if (self$is_task_finished(id)){
-        self$task_unfinish(id, I_AM_SURE = I_AM_SURE)
-      }
-      private$.task_unstart(id, I_AM_SURE = I_AM_SURE)
+      if (!I_AM_SURE) stop("Need to explicitly declare that you know what you by setting argument I_AM_SURE = TRUE")
+      else if (private$.concurrent) warning('Cannot unstart while in concurrent mode. Nothing done.')
+      else self$get_task(id)$unstart()
     },
     task_unfinish = function(id, I_AM_SURE = FALSE){ 
-      if(private$.concurrent) stop('Cannot undo changes to tasks while in concurrent mode')
-      if(!self$is_task_defined(id)) {
-        stop(paste('Task', id, 'is not defined. Cannot unfinish.'))
-      } else if(!self$ is_task_finished(id)) {
-        stop(paste('Task', id, 'has not finished yet. Cannot unfinish.'))
-      }
-      #have to unfinish all tasks that depend on this one
-      dep <- append(id, self$get_all_dependent_tasks(id))
-      for (t in dep){
-        private$.task_unfinish(t, I_AM_SURE = I_AM_SURE)
-      }
+      if (!I_AM_SURE) stop("Need to explicitly declare that you know what you by setting argument I_AM_SURE = TRUE")
+      else if (private$.concurrent) warning('Cannot unfinish while in concurrent mode. Nothing done.')
+      else self$get_task(id)$unfinish()
     },
     task_undefine = function(id, I_AM_SURE = FALSE){
-      if(private$.concurrent) stop('Cannot undo changes to tasks while in concurrent mode')
-      warning('not implemented.')
+      if (!I_AM_SURE) stop("Need to explicitly declare that you know what you by setting argument I_AM_SURE = TRUE")
+      else if (private$.concurrent) warning('Cannot undefine while in concurrent mode. Nothing done.')
+      private[[id]] <- NULL
     },
     change_scheduling_mode = function(concurrent = !private$.concurrent){
       private$.concurrent <- concurrent
       message('Scheduling mode is now: ', ifelse(concurrent, 'concurrent', 'sequential'))
+    },
+    get_all_tasks = function(){
+      l <- character()
+      for (task in private$.data){
+        l <- append(l, task$get_id())
+      }
+      return(l)
+    },
+    get_all_unfinished_tasks = function(){
+      x <- character()
+      for (t in private$.data){
+        if (!t$is_finished()){
+          x <- c(x, t$get_id())
+        }
+      }
+      return(x)
+    },
+    get_all_finished_tasks = function(){
+      x <- character()
+      for (t in private$.data){
+        if (t$is_finished()){
+          x <- c(x, t$get_id())
+        }
+      }
+      return(x)
+    },
+    are_all_tasks_finished = function(){
+      x <- self$get_all_unfinished_tasks()
+      return(length(x) == 0)
+    },
+    print = function(){
+      for (t in private$.data){
+        cat(t$get_oneline_summary(), '\n')
+      }
+    },
+    getJSON = function(){
+      #finish
+      x <- self$get_list_definition()
+      jsonlite::toJSON(
+        x, pretty = TRUE, null = "null",
+        na = "null", auto_unbox = TRUE
+      )
+      
+    },
+    peek = function(){
+      return(private$.data)
     }
   )
 )
+#l <- taskLog$new()
+#l$create_task(id = 'hola', comments = 'Created manually.')
+#l$create_task(id = 'adios', requisites = 'hola')
+#l$create_task(id = 'x1', requisites = 'x2')
+#l$create_task(id = 'x2', requisites = 'x3')
+#a <- l$get_list_definition()
+#l2 <- taskLog$new()
+#(l2$load_list_definition(a))
+#l2$start_task('hola')
+#l2$finish_task('hola')
+#l
+#l2
+#l$log_merge(l2)
+#l
+#
+#a <- l$get_task('x2')
+#l$import_task(a)
+#b <- CTask$new(id = 'externa' )
+#l$import_task(b)
+#l$task_unfinish('hola', I_AM_SURE = TRUE)
+#l$get_all_tasks()
+#l$get_all_finished_tasks()
+#l$get_all_unfinished_tasks()
+#l$are_all_tasks_finished()
+#l$get_all_requisite_tasks('x1')
+#l$get_all_unfinished_tasks()
+#l$get_unmet_requisites('hola')
+#l$get_unmet_requisites('x1')
+#l$get_dependency_tree()
+#l$get_all_dependent_tasks('hola')
+#l$change_scheduling_mode()
+#l$print()
+#l$getJSON()
+#x <- l$get_list_definition()
+#l$load_list_definition(x)
+#l$get_task('adios')$get_list_definition()
+#l$get_task('adios')$start()
+#
+#lapply(l$peek(), FUN = function(x)x$get_requisites())

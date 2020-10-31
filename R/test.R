@@ -7,8 +7,9 @@ library(magrittr)
 library(filelock)
 
 source(file = 'R/paramComp.R')
+source(file = 'R/paramBatchComp.R')
 source(file = 'R/taskLog.R')
-source(file = 'R/batchComp.R')
+source(file = 'R/Comp.R')
 source(file = 'R/general.R')
 
 (a <- paramComp$new(parameter_list = list(id = 'BASE_NOSTRAT', mean = 1.0, sd = 1.0, trials =1000)))
