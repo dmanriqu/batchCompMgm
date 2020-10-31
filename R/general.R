@@ -26,3 +26,16 @@ replace_markers <- function(string, data) {
   }
   return(string)
 }
+
+generate_names_from_pattern <- function(obj, pattern, sep = '\n', before = '', after = '', file = ''){
+  res <- character()
+  if ('CompMgm' %in% class(obj)) {
+    obj <- obj$params
+  }
+  if ('paramComp' %in% class(obj)){
+    res <- paste(obj$string_from_fields(pattern), collapse = sep)
+  } else {
+    stop('Wrong type of object (can only be CompMgm or paramComp')
+  }
+  cat(before, res, after, file = file, sep ='')
+}

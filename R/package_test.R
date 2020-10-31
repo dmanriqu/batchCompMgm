@@ -89,4 +89,5 @@ r$is_loaded
 
 
 
+
 #detach('package:batchCompMgm', unload = TRUE)

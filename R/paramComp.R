@@ -122,8 +122,8 @@ paramComp <- R6::R6Class(
       if (!("paramComp" %in% l$class)) stop("Wrong 'class' attribute")
       self$load_list_definition(l, str_dates = TRUE)
     },
-    generate_file_name = function(file_name_pattern = "<id>_param.json") {
-      replace_markers(file_name_pattern, data = private$.values)
+    string_from_fields= function(pattern = "<id>_param.json") {
+      replace_markers(pattern, data = private$.values)
     }
   )
 )

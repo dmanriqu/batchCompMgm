@@ -71,6 +71,13 @@ paramBatchComp <- R6::R6Class(
       }
       return(r)
     },
+    string_from_fields = function(pattern = '<id>'){
+      res <- character()
+      for (t in self$get_params_for_trials()){
+        res <- c(res, t$string_from_fields(pattern))
+      }
+      res
+    },
     load_list_definition = function(def = NULL, str_dates = TRUE){
       super$load_list_definition(def = def, str_dates = str_dates)
       private$.validate_subclass()

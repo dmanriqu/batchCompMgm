@@ -5,6 +5,7 @@ importFrom(utils, globalVariables)
 export(paramComp)
 export(paramBatchComp)
 export(CompMgm)
+export(generate_names_from_pattern)
 S3method(`!=`, paramComp)
 S3method(`==`, paramComp)
 
