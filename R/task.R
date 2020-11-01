@@ -87,7 +87,8 @@ CTask <- R6::R6Class (
         private$.data$objects = x$objects
         private$.data$requisites = x$requisites
       if(!is.null(x$params)) {
-        private$.data$params <-paramComp$new(strJSON = jsonlite::toJSON(x$params))
+        #it'd be better to allow to construct empty paramComp objects and then load the list...
+        private$.data$params <-paramComp$new(strJSON = jsonlite::toJSON(x$params, auto_unbox = TRUE, na = 'null'))
       }
     },
     toJSON = function(){
