@@ -161,7 +161,13 @@ CTask <- R6::R6Class (
       return(private$.data$params)
     },
     register_event = function(message){
-      private$.data$events[[date2str(Sys.time())]] <- as.character(message)
+      t <- date2str(Sys.time())
+      lab <- t; cc <- 1
+      while (lab %in% names(private$.data$events)){
+        lab <- paste0(t, '_', cc)
+        cc <- cc + 1
+      }
+      private$.data$events[[lab]] <- as.character(message)
     },
     get_events = function(){
       private$.data$events
@@ -210,8 +216,9 @@ CTask <- R6::R6Class (
       if (!self$is_started() && another$is_started()) private$.data$time_start <- another$get_time_start(as_str = FALSE)
       get <- setdiff(names(another$get_events()), names(self$get_events()))
       for (i in seq_along(get)){
-        private$.data$events[[get[i]]] <- another$get_events()[[i]]
+        private$.data$events[[get[i]]] <- another$get_events()[[get[i]]]
       }
+      private$.data$events[ sort(names(private$.data$events))  ]
     }
   )
 )
