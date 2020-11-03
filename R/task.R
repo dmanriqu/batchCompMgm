@@ -43,11 +43,8 @@ CTask <- R6::R6Class (
       private$.data$time_end= as.POSIXct(NA)
       private$.data$time_start = as.POSIXct(NA)
       self$register_event('Object created.')
-      j <- self$toJSON()
-      self$fromJSON(j)
-    },
-    flatten2df = function(){
-      
+      j <- self$save()
+      self$load(string = j)
     },
     get_requisites = function(){
       return(private$.data$requisites)
@@ -93,17 +90,6 @@ CTask <- R6::R6Class (
         #it'd be better to allow to construct empty paramComp objects and then load the list...
         private$.data$params <-paramComp$new(strJSON = jsonlite::toJSON(x$params, auto_unbox = TRUE, na = 'null'), persist_format = private$.serializer$format)
       }
-    },
-    toJSON = function(){
-      x <- self$get_list_definition()
-      jsonlite::toJSON(
-        x, pretty = TRUE, null = "null",
-        na = "null", auto_unbox = TRUE
-      )
-    },
-    fromJSON = function(json_str){
-      x <- jsonlite::fromJSON(txt = json_str)
-      self$load_list_definition(x)
     },
     finish = function(){
       if(!self$is_started()){

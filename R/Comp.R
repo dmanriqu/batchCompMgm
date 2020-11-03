@@ -18,7 +18,7 @@ CompMgm  <- R6::R6Class (
         private$.obj_parameters = paramComp$new(persist_format = private$.serializer$format)
       }
       #DEBUG
-      private$.obj_parameters$load_list_definition(def = param_list_def, str_dates = TRUE)
+      private$.obj_parameters$load_list_definition(def = param_list_def)
     },
     .file_lock_name = function(file_name){
       d <- dirname(file_name)
@@ -43,18 +43,18 @@ CompMgm  <- R6::R6Class (
     .release_file_lock = function(flock){
       filelock::unlock(lock = flock)
     },
-    .write = function(file_name) {
-      x  <- self$get_list_definition(str_dates = TRUE)
-      jsonlite::write_json(
-        x, path = file_name, pretty = TRUE,
-        null = "null", na = "null", auto_unbox = TRUE
-      )
-    },
-    .read = function(file_name) {
-      x <- jsonlite::read_json(path = file_name)
-      self$load_list_definition(x, str_dates = TRUE)
-      invisible(self)
-    },
+    # .write = function(file_name) {
+    #   x  <- self$get_list_definition(str_dates = TRUE)
+    #   jsonlite::write_json(
+    #     x, path = file_name, pretty = TRUE,
+    #     null = "null", na = "null", auto_unbox = TRUE
+    #   )
+    # },
+    # .read = function(file_name) {
+    #   x <- jsonlite::read_json(path = file_name)
+    #   self$load_list_definition(x, str_dates = TRUE)
+    #   invisible(self)
+    # },
     .validate_id = function(id){
       #requirements for id.
       if(!is.character(id)) return('Task id must be of type character')
@@ -76,7 +76,6 @@ CompMgm  <- R6::R6Class (
     initialize  = function(
       parameters = NULL,
       file_name = NULL, 
-      # ifelse(!is.null(parameters), "<id>_batch.json", NULL),
       concurrent = FALSE,
       overwrite_file = FALSE,
       auto_update = FALSE,
@@ -117,7 +116,7 @@ CompMgm  <- R6::R6Class (
           l <- private$.acquire_file_lock(file_name = private$.file_name)
           e <- tryCatch(
             {
-              private$.write(private$.file_name)
+              self$save(private$.file_name)
               NULL
             },
             error = function(e) e,
@@ -132,7 +131,7 @@ CompMgm  <- R6::R6Class (
         l <- private$.acquire_file_lock(file_name = private$.file_name)
         e <- tryCatch(
           {
-            private$.read(private$.file_name)
+            self$load(private$.file_name)
             NULL
           },
           error = function(e) e,
@@ -241,24 +240,31 @@ CompMgm  <- R6::R6Class (
       }
       parameters$equal(private$.obj_parameters)
     },
-    getJSON = function() {
-      x  <- self$get_list_definition(str_dates = TRUE)
-      jsonlite::toJSON(
-        x, pretty = TRUE, null = "null",
-        na = "null", auto_unbox = TRUE
-      )
-    },
-    loadJSON = function(string) {
-      x <- jsonlite::fromJSON(txt = string)
-      self$load_list_definition(x, str_dates = TRUE)
-    },
+    # getJSON = function() {
+    #   x  <- self$get_list_definition(str_dates = TRUE)
+    #   jsonlite::toJSON(
+    #     x, pretty = TRUE, null = "null",
+    #     na = "null", auto_unbox = TRUE
+    #   )
+    # },
+    # loadJSON = function(string) {
+    #   x <- jsonlite::fromJSON(txt = string)
+    #   self$load_list_definition(x, str_dates = TRUE)
+    # },
     save_as = function(file_name, overwrite_file = FALSE) {
       if (!overwrite_file && file.exists(file_name)) {
         stop("file '", file_name, "' already exists ", "use 'overwrite_file = TRUE' to overwrite")
       }
       l <- private$.acquire_file_lock(file_name)
-      private$.write(file_name)
-      private$.release_file_lock(l)
+      e <- tryCatch(
+        {
+          self$save(file_name)
+          NULL
+        },
+        error = function(e)e,
+        finally =  private$.release_file_lock(l)
+      )
+      if (!is.null(e)) stop(e)
       if (!is.null(private$.file_name) && file_name != private$.file_name) {
         warning("Changed attached file from ", private$.file_name, " to ", file_name)
       } 
@@ -279,9 +285,9 @@ CompMgm  <- R6::R6Class (
       flock <- private$.acquire_file_lock(private$.file_name)
       e <- tryCatch(
         {
-          private$.read(private$.file_name)
+          self$load(private$.file_name)
           private$.obj_log$log_merge(o)
-          private$.write(private$.file_name)
+          self$save(private$.file_name)
           NULL
         },
         error = function(e){e},
@@ -335,19 +341,19 @@ CompMgm  <- R6::R6Class (
         )
       }
     },
-    get_list_definition = function(str_dates = TRUE) {
+    get_list_definition = function() {
       list(
         class      = class(self),
-        parameters = private$.obj_parameters$get_list_definition(str_dates = TRUE),
+        parameters = private$.obj_parameters$get_list_definition(),
         closed     = private$.closed,
         log        = private$.obj_log$get_list_definition()
       )
     },
-    load_list_definition = function(def, str_dates = TRUE) {
+    load_list_definition = function(def) {
       if (!("CompMgm" %in% def$class)) {
         stop("Wrong 'class' when reading definition of 'CompMgm' object attribute")
       } 
-      private$.read_parameters(def$parameters, str_dates = TRUE)
+      private$.read_parameters(def$parameters)
       private$.obj_log$load_list_definition(def$log)
       private$.closed <- def$closed
       invisible(self)

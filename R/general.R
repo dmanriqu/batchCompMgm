@@ -79,7 +79,7 @@ serializer <- R6::R6Class(
       x <- serial_2_listdef(in_str)
       private$.list2obj(x)
     },
-    serial_2_listdef =function(){
+    serial_2_listdef =function(in_str){
       if (private$.type == 'json'){
         x <- jsonlite::fromJSON(txt = in_str, simplifyVector = TRUE) 
       } else if (private$.type == 'yaml'){
@@ -117,7 +117,18 @@ base_mgmObj <- R6::R6Class(
   #define basic interface and communication methods
   classname = 'base_mgmObj',
   private = list(
-    .serializer = NULL
+    .serializer = NULL,
+    .replace_markers = function(string, data) {
+      x <- gregexpr(pattern = "<[^>]+>", text = string, perl = TRUE)
+      labels <- unlist(regmatches(x = string, x))
+      fields <-  gsub("<([^>]+)>", replacement = '\\1', x =  labels, perl = TRUE)
+      subs <- data[fields]
+      if(length(subs) < length(fields)) stop("Substitution fields not found")
+      for (i in seq_along(fields)) {
+        string <- gsub(pattern = labels[i], replacement = subs[i], x = string)
+      }
+      return(string)
+    }
   ),
   public = list(
     initialize = function(persist_format = c('json', 'yaml')){

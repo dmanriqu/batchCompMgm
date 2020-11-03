@@ -12,11 +12,14 @@ source(file = 'R/paramBatchComp.R')
 source(file = 'R/task.R')
 source(file = 'R/taskLog.R')
 source(file = 'R/Comp.R')
-a <- paramComp$new(parameter_list = list(id = 'TEST_COMP', mean = 1.0, sd = 1.0, trials =1000))
-a$save()
+a <- paramComp$new(parameter_list = list(id = 'TEST_COMP', mean = 1.0, sd = 1.0, trials =1000), eq_function = function(x,y)all.equal(x,y), persist_format = 'json')
+a$save('borrar.txt')
+b <- paramComp$new(persist_format = 'json')
+b$load(file_name = 'borrar.txt')
+b == a
 batch <- CompMgm$new(parameters = a, file_name = 'batch_<id>_mean_<mean>.json', 
                      concurrent = TRUE, overwrite_file = TRUE, 
-                     persist_format = 'yaml')
+                     persist_format = 'json')
 batch$create_task(id = 't1', description = 'te uno')
 batch$create_task(id = 't2', description = 'te dos')
 batch$create_task(id = 'uno', description = '1')
@@ -31,7 +34,7 @@ batch$is_task_finished('t1')
 batch
 batch$update()
 batch
-x <- CompMgm$new(file_name = 'batch_TEST_COMP_mean_1.json')
+x <- CompMgm$new(file_name = 'batch_TEST_COMP_mean_1.json', persist_format = 'json')
 x$update()
 #create a tree:
 batch$create_task(id = 'uno')
@@ -62,6 +65,8 @@ snowfall::sfSource(file = 'R/task.R')
 snowfall::sfSource(file = 'R/general.R')
 batch$clean_lockfile()
 tasks <- c( '1.1', '1.3', '1.2', '1.3.1', '1.3.2', '1.3.3', '1.3.2.1')
+batch$set_concurrent_on()
+batch$update()
 x <- snowfall::sfSapply(tasks, 
    fun = function(id, a){ 
       batch <- CompMgm$new(file_name = a)
@@ -86,9 +91,8 @@ batch$get_log_object()$task_unstart('1.3', I_AM_SURE = FALSE)
 batch
 batch$save_as(batch$filename, overwrite_file = TRUE)
 batch$update()
-batch$load_list_definition( )
 r <- paramComp$new()
-r$writeJSON_def()
+r$save()
 r$is_loaded
 batch$save('borrar.txt')
 
@@ -96,3 +100,4 @@ batch$save('borrar.txt')
 
 
 #detach('package:batchCompMgm', unload = TRUE)
+

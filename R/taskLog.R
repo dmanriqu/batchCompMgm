@@ -124,35 +124,6 @@ taskLog <- R6::R6Class(
       }
       invisible(self)
     },
-    log_tabular = function(str_dates = TRUE, na = NA) {
-      if (!self$is_log_in_use()) {
-        return(NULL)
-      } else {
-        y <- lapply(
-           private$.data,
-           FUN = function(x) {
-             data.frame(
-              id = x$id, name = x$name, descr = x$descr,
-              time_init = x$time_init,
-              time_start = x$time_start,
-              time_end = x$time_end,
-              notes = x$notes,
-              file_name = x$file_name,
-              Robject_names = paste(x$Robject_names, collapse = ", "),
-              depends = paste(x$depends, collapse = ", "),
-              stringsAsFactors = FALSE
-             )
-           }
-        )
-        y <- do.call(rbind, y)
-      }
-      if (str_dates) {
-        y$time_init <- date2str(y$time_init)
-        y$time_start <- date2str(y$time_start)
-        y$time_end  <- date2str(y$time_end)
-      }
-      return(y)
-    },
     get_list_definition = function() {
       x <- list(
         class = class(self),
@@ -287,15 +258,6 @@ taskLog <- R6::R6Class(
       for (t in private$.data){
         cat(t$get_oneline_summary(), '\n')
       }
-    },
-    getJSON = function(){
-      #finish
-      x <- self$get_list_definition()
-      jsonlite::toJSON(
-        x, pretty = TRUE, null = "null",
-        na = "null", auto_unbox = TRUE
-      )
-      
     },
     peek = function(){
       return(private$.data)

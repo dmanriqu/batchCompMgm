@@ -84,8 +84,8 @@ paramBatchComp <- R6::R6Class(
       super$load_list_definition(def = def, str_dates = str_dates)
       private$.validate_subclass()
     },
-    loadJSON_def = function(strJSON = NULL, file_name = NULL){
-      super$loadJSON_def(strJSON = strJSON, file_name = file_name)
+    load = function(file_name = NULL, string = NULL){
+      super$load(file_name = file_name, string = string)
       private$.validate_subclass()
     }
   )
