@@ -94,6 +94,9 @@ batch$update()
 r <- paramComp$new()
 r$save()
 r$is_loaded
+r$load(string = a$save())
+r$get_list_definition()
+r$save()
 batch$save('borrar.txt')
 
 
