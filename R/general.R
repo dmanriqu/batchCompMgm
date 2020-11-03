@@ -117,6 +117,7 @@ base_mgmObj <- R6::R6Class(
   #define basic interface and communication methods
   classname = 'base_mgmObj',
   private = list(
+    .silent = NULL,
     .serializer = NULL,
     .replace_markers = function(string, data) {
       x <- gregexpr(pattern = "<[^>]+>", text = string, perl = TRUE)
@@ -128,11 +129,16 @@ base_mgmObj <- R6::R6Class(
         string <- gsub(pattern = labels[i], replacement = subs[i], x = string)
       }
       return(string)
+    },
+    .message = function(...){
+      if (private$.silent) invisible()
+      message(...)
     }
   ),
   public = list(
     initialize = function(persist_format = c('json', 'yaml')){
       private$.serializer <- serializer$new(type = persist_format[1])
+      private$.silent <- FALSE
     },
     get_list_definition = function() {
       stop('get_list_definition() not implemented')
@@ -159,6 +165,12 @@ base_mgmObj <- R6::R6Class(
       }
       l <- private$.serializer$serial_2_listdef(s)
       self$load_list_definition(l)
+    },
+    set_silent_on = function(){
+      private$.silent <- TRUE
+    },
+    set_silent_off = function(){
+      private$.silent <- FALSE
     }
   )
 )

@@ -87,6 +87,14 @@ paramBatchComp <- R6::R6Class(
     load = function(file_name = NULL, string = NULL){
       super$load(file_name = file_name, string = string)
       private$.validate_subclass()
+    },
+    remove_fields = function(field_names){
+      super$remove_fields(field_names)
+      warning('Validation not implemented. Object might be in an inconsistent state.')
+    },
+    update_fields = function(lst_fields_values) {
+      super$update_fields(lst_fields_values)
+      warning('Validation not implemented. Object might be in an inconsistent state.')
     }
   )
 )

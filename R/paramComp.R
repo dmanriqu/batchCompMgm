@@ -103,9 +103,42 @@ paramComp <- R6::R6Class(
       }
       super$save(file_name_pattern)
     },
-    #eliminate next two after checking
     string_from_fields= function(pattern = "<id>_param.json") {
       replace_markers(pattern, data = private$.values)
+    },
+    update_fields = function(lst_fields_values) {
+      if (!is.list(lst_fields_values)){
+        stop('Need to provide a named list of fields and values.')
+      }
+      old <- new <- character()
+      for (i in seq_along(lst_fields_values)) {
+        f <- lst_fields_values[i]
+        n <- names(f)
+        if (is.null(n) || n == '') {
+          warning('Element ', i, ' in list not named. Skipping.')
+          next
+        }
+        if (n %in% names(private$.values)){
+          old <- append(old, n)
+        } else {
+          new <- append(new,n)
+        }
+        private$.values[[n]] <- f[[1]]
+      }
+      private$.message('Fields updated: ', paste(old, collapse = ', '), '\nNew fields: ', paste(new, collapse = ', '))
+      invisible(self)
+    },
+    remove_fields = function(field_names){
+      if (!is.character(field_names)){
+        stop('Need to provide a vector of character names')
+      }
+      for (n in field_names){
+        if (n == 'id'){
+          warning('Cannot remove id field. Skipping')
+        }
+        private$.values[[n]] <- NULL
+      }
+      invisible(self)
     }
   )
 )
