@@ -6,14 +6,17 @@ library(magrittr)
 library(filelock)
 library(snowfall)
 
+source(file = 'R/general.R')
 source(file = 'R/paramComp.R')
-source(file = 'R/task.R')
 source(file = 'R/paramBatchComp.R')
+source(file = 'R/task.R')
 source(file = 'R/taskLog.R')
 source(file = 'R/Comp.R')
-source(file = 'R/general.R')
 a <- paramComp$new(parameter_list = list(id = 'TEST_COMP', mean = 1.0, sd = 1.0, trials =1000))
-batch <- CompMgm$new(a, file_name = 'batch_<id>_mean_<mean>.json', concurrent = TRUE, overwrite_file = TRUE)
+a$save()
+batch <- CompMgm$new(parameters = a, file_name = 'batch_<id>_mean_<mean>.json', 
+                     concurrent = TRUE, overwrite_file = TRUE, 
+                     persist_format = 'yaml')
 batch$create_task(id = 't1', description = 'te uno')
 batch$create_task(id = 't2', description = 'te dos')
 batch$create_task(id = 'uno', description = '1')
@@ -25,7 +28,9 @@ batch$start_task('t1'); batch$finish_task('t1')
 batch$start_task('uno'); batch$finish_task('uno')
 batch$start_task('dos'); batch$finish_task('dos')
 batch$is_task_finished('t1')
+batch
 batch$update()
+batch
 x <- CompMgm$new(file_name = 'batch_TEST_COMP_mean_1.json')
 x$update()
 #create a tree:
@@ -81,11 +86,11 @@ batch$get_log_object()$task_unstart('1.3', I_AM_SURE = FALSE)
 batch
 batch$save_as(batch$filename, overwrite_file = TRUE)
 batch$update()
-batch
+batch$load_list_definition( )
 r <- paramComp$new()
 r$writeJSON_def()
 r$is_loaded
-
+batch$save('borrar.txt')
 
 
 

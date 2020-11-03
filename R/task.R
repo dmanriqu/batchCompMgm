@@ -1,6 +1,7 @@
 #Task object
 CTask <- R6::R6Class ( 
   classname = "CTask",
+  inherit = base_mgmObj,
   private = list(
     .data = list(
       id = character(),
@@ -25,8 +26,10 @@ CTask <- R6::R6Class (
       params = NULL,
       comments = NULL,
       filenames = NULL,
-      objects = NULL
+      objects = NULL,
+      persist_format = c('json', 'yaml')
     ){
+      super$initialize(persist_format[1])
       if (!is.character(id)) stop('Id must be of type character.')
       private$.data$id =id
       private$.data$description = description
@@ -88,7 +91,7 @@ CTask <- R6::R6Class (
         private$.data$requisites = x$requisites
       if(!is.null(x$params)) {
         #it'd be better to allow to construct empty paramComp objects and then load the list...
-        private$.data$params <-paramComp$new(strJSON = jsonlite::toJSON(x$params, auto_unbox = TRUE, na = 'null'))
+        private$.data$params <-paramComp$new(strJSON = jsonlite::toJSON(x$params, auto_unbox = TRUE, na = 'null'), persist_format = private$.serializer$format)
       }
     },
     toJSON = function(){

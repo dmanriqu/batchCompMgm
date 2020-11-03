@@ -3,6 +3,7 @@
 #' @examples
 paramComp <- R6::R6Class(
   classname = "paramComp",
+  inherit = base_mgmObj,
   lock_objects = FALSE,
   private = list(
     .values = NULL,
@@ -47,20 +48,19 @@ paramComp <- R6::R6Class(
     #' x <- paramComp$new(a = 1, b = 2)
     initialize = function(
       load_from_file = NULL,
-      strJSON  = NULL, parameter_list = NULL,
-      eq_function = function(a, b) {all.equal(a, b)}
+      parameter_list = NULL,
+      eq_function = function(a, b) {all.equal(a, b)},
+      persist_format = c('json','yaml')
     ) {
+      super$initialize(persist_format[1])
       if (!is.null(load_from_file)) {
         self$loadJSON_def(load_from_file)
-        return(self)
-      } else if (!is.null(strJSON)) {
-        self$loadJSON_def(strJSON)
-        return(self)
       } else if (!is.null(parameter_list)) {
         private$.add(parameter_list)
+      } else {
+        private$.eq_function <- eq_function
+        private$.date <- Sys.time()
       }
-      private$.eq_function <- eq_function
-      private$.date <- Sys.time()
       invisible(self)
     },
     equal = function(obj) {
@@ -136,7 +136,7 @@ paramComp <- R6::R6Class(
  !a$equal(b)
 }
 
-utils::globalVariables(names = c("self", "super"))
+#utils::globalVariables(names = c("self", "super"))
 
 
 # @description

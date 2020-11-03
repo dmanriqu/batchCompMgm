@@ -49,7 +49,8 @@ paramBatchComp <- R6::R6Class(
       load_from_file = NULL,
       strJSON  = NULL, 
       parameter_list = NULL,
-      eq_function = function(a, b) {all.equal(a, b)}
+      eq_function = function(a, b) {all.equal(a, b)},
+      persist_format = c('json', 'yaml')
     ) {
       if(!is.null(parameter_list))  parameter_list$trials <- as.character(parameter_list$trials)
       #if(is.null(load_from_file) || is.null(strJSON) || is.null(parameter_list))
@@ -57,7 +58,8 @@ paramBatchComp <- R6::R6Class(
         load_from_file = load_from_file,
         strJSON  = strJSON,
         parameter_list = parameter_list,
-        eq_function = eq_function
+        eq_function = eq_function,
+        persist_format = persist_format[1]
       )
       if (self$is_loaded){
         private$.validate_subclass()

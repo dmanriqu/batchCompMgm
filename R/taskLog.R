@@ -2,6 +2,7 @@
 
 taskLog <- R6::R6Class(
   classname = "taskLog",
+  inherit = base_mgmObj,
   private = list(
    .data = list(),
    .concurrent = FALSE,
@@ -53,7 +54,8 @@ taskLog <- R6::R6Class(
     }
   ),
   public = list(
-    initialize = function(concurrent = FALSE) {
+    initialize = function(concurrent = FALSE, persist_format = c('json', 'yaml')) {
+      super$initialize(persist_format = persist_format[1])
       private$.concurrent = concurrent
     },
     create_task = function(
@@ -78,7 +80,8 @@ taskLog <- R6::R6Class(
       private$.data[[id]] <-  CTask$new( 
         id = id, description = description, requisites = requisites, 
         params = params, comments = comments, filenames = filenames, 
-        objects = objects
+        objects = objects,
+        persist_format = private$.serializer$format
       )
       invisible(self)
     },
@@ -165,7 +168,7 @@ taskLog <- R6::R6Class(
       if(!('taskLog' %in% def$class)) stop ('Not a definition of a taskLog object. Aborting.')
       data <- list()
       for (t in def$data){
-        data[[t$id]] <- CTask$new(id = 'xx') 
+        data[[t$id]] <- CTask$new(id = 'xx', persist_format = private$.serializer$format)
         data[[t$id]]$load_list_definition(t)
       }
       private$.concurrent <- def$concurrent 

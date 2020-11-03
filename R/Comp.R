@@ -1,6 +1,7 @@
 # New Object for storing computations
 
-CompMgm  <- R6::R6Class ( classname = "CompMgm",
+CompMgm  <- R6::R6Class ( 
+  classname = "CompMgm", inherit = base_mgmObj, 
   private = list(
     .obj_log = NULL, 
     .auto_update = FALSE,
@@ -14,27 +15,10 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       } else if ("paramBatchComp" %in% param_list_def$class) {
         private$.obj_parameters = paramBatchComp$new()
       } else {
-        private$.obj_parameters = paramComp$new()
+        private$.obj_parameters = paramComp$new(persist_format = private$.serializer$format)
       }
       #DEBUG
       private$.obj_parameters$load_list_definition(def = param_list_def, str_dates = TRUE)
-    },
-    .get_list_definition = function(str_dates = TRUE) {
-      list(
-         class      = class(self),
-         parameters = private$.obj_parameters$get_list_definition(str_dates = TRUE),
-         closed     = private$.closed,
-         log        = private$.obj_log$get_list_definition()
-      )
-    },
-    .load_list_definition = function(def, str_dates = TRUE) {
-      if (!("CompMgm" %in% def$class)) {
-        stop("Wrong 'class' when reading definition of 'CompMgm' object attribute")
-      } 
-      private$.read_parameters(def$parameters, str_dates = TRUE)
-      private$.obj_log$load_list_definition(def$log)
-      private$.closed <- def$closed
-      invisible(self)
     },
     .file_lock_name = function(file_name){
       d <- dirname(file_name)
@@ -60,7 +44,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       filelock::unlock(lock = flock)
     },
     .write = function(file_name) {
-      x  <- private$.get_list_definition(str_dates = TRUE)
+      x  <- self$get_list_definition(str_dates = TRUE)
       jsonlite::write_json(
         x, path = file_name, pretty = TRUE,
         null = "null", na = "null", auto_unbox = TRUE
@@ -68,7 +52,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
     },
     .read = function(file_name) {
       x <- jsonlite::read_json(path = file_name)
-      private$.load_list_definition(x, str_dates = TRUE)
+      self$load_list_definition(x, str_dates = TRUE)
       invisible(self)
     },
     .validate_id = function(id){
@@ -92,11 +76,13 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
     initialize  = function(
       parameters = NULL,
       file_name = NULL, 
-        # ifelse(!is.null(parameters), "<id>_batch.json", NULL),
+      # ifelse(!is.null(parameters), "<id>_batch.json", NULL),
       concurrent = FALSE,
       overwrite_file = FALSE,
-      auto_update = FALSE
+      auto_update = FALSE,
+      persist_format = c('json', 'yaml')
     ) {
+      super$initialize(persist_format = persist_format[1])
       fn <- !is.null(file_name)
       p <- !is.null(parameters)
       ow <- overwrite_file
@@ -125,7 +111,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       }
       if(action == 'create'){
         private$.obj_parameters <- parameters$clone()
-        private$.obj_log <- taskLog$new(concurrent = concurrent)
+        private$.obj_log <- taskLog$new(concurrent = concurrent, persist_format = private$.serializer$format)
         private$.closed <- FALSE
         if (fn){
           l <- private$.acquire_file_lock(file_name = private$.file_name)
@@ -142,7 +128,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
           warning('Filename not attached. Use "save_as to create one".')
         }
       } else if (action == 'read'){
-        private$.obj_log <- taskLog$new()
+        private$.obj_log <- taskLog$new(persist_format = private$.serializer$format)
         l <- private$.acquire_file_lock(file_name = private$.file_name)
         e <- tryCatch(
           {
@@ -170,7 +156,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       cat("log:\n")
       private$.obj_log$print()
     },
-  # task control wrappers
+    # task control wrappers
     create_task = function(
       id = NULL, description = NULL, comments = NULL, filenames = NULL, params = NULL,
       objects = NULL, requisites = NULL
@@ -219,7 +205,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       private$.obj_log$is_task_cleared(id)
     },
     is_batch_of_trials = function(){
-     return('paramBatchComp' %in% class(private$.obj_parameters))
+      return('paramBatchComp' %in% class(private$.obj_parameters))
     },
     start_when_ready = function(id, poll_interval = 10, timeout = Inf) {
       v <- private$.validate_id(id)
@@ -238,8 +224,8 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       private$.obj_log$start_task(id)
       invisible(self)
     },
-
-  # Close for good
+    
+    # Close for good
     close = function() {
       # check that the tasks are completed
       if (!self$are_all_task_finished()){
@@ -248,7 +234,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       private$.closed  <- TRUE
       invisible(self)
     },
- # Compare to another parameter object
+    # Compare to another parameter object
     same_parameters = function(parameters) {
       if (is.null(private$.obj_parameters)) {
         stop("Parameters not loaded")
@@ -256,7 +242,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       parameters$equal(private$.obj_parameters)
     },
     getJSON = function() {
-      x  <- private$.get_list_definition(str_dates = TRUE)
+      x  <- self$get_list_definition(str_dates = TRUE)
       jsonlite::toJSON(
         x, pretty = TRUE, null = "null",
         na = "null", auto_unbox = TRUE
@@ -264,7 +250,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
     },
     loadJSON = function(string) {
       x <- jsonlite::fromJSON(txt = string)
-      private$.load_list_definition(x, str_dates = TRUE)
+      self$load_list_definition(x, str_dates = TRUE)
     },
     save_as = function(file_name, overwrite_file = FALSE) {
       if (!overwrite_file && file.exists(file_name)) {
@@ -288,7 +274,7 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
         invisible(self)
       }
       l <- private$.obj_log$get_list_definition()
-      o <- taskLog$new()
+      o <- taskLog$new(persist_format = private$.serializer$format)
       o$load_list_definition(l)
       flock <- private$.acquire_file_lock(private$.file_name)
       e <- tryCatch(
@@ -316,39 +302,56 @@ CompMgm  <- R6::R6Class ( classname = "CompMgm",
       private$.auto_update <- FALSE
       message('Auto-update off.')
     },
-   task_unfinish = function(id, I_AM_SURE = FALSE){
-     private$.obj_log$task_unfinish(id, I_AM_SURE)
-     invisible(self)
-   },
-   task_unstart= function(id, I_AM_SURE = FALSE){
-     private$.obj_log$task_unstart(id, I_AM_SURE)
-     invisible(self)
-   },
-   set_concurrent_on = function(){
-     private$.obj_log$change_scheduling_mode(concurrent = TRUE)
-   },
-   set_concurrent_off = function(){
-     private$.obj_log$change_scheduling_mode(concurrent = FALSE)
-   },
-  # Functions for batch of trials. Requires parameter of class paramBatchComp
-   generate_params_for_trials = function(){
-     if (!self$is_batch_of_trials())
-       stop('Parameters are not a batch definition')
-     self$params$get_params_for_trials() 
-   },
-   generate_tasks_from_trials = function(requisites = NULL){
-     if (!self$is_batch_of_trials())
-       stop('Parameters are not a batch definition')
-     l <- private$.obj_parameters$get_params_for_trials()
-     for (p in l){
-       self$create_task(
-         id = as.character(p$values$trial),
-         comments = paste('Created automatically from trial', p$values$id),
-         params = p,
-         requisites = requisites
-       )
-     }
-   }
+    task_unfinish = function(id, I_AM_SURE = FALSE){
+      private$.obj_log$task_unfinish(id, I_AM_SURE)
+      invisible(self)
+    },
+    task_unstart= function(id, I_AM_SURE = FALSE){
+      private$.obj_log$task_unstart(id, I_AM_SURE)
+      invisible(self)
+    },
+    set_concurrent_on = function(){
+      private$.obj_log$change_scheduling_mode(concurrent = TRUE)
+    },
+    set_concurrent_off = function(){
+      private$.obj_log$change_scheduling_mode(concurrent = FALSE)
+    },
+    # Functions for batch of trials. Requires parameter of class paramBatchComp
+    generate_params_for_trials = function(){
+      if (!self$is_batch_of_trials())
+        stop('Parameters are not a batch definition')
+      self$params$get_params_for_trials() 
+    },
+    generate_tasks_from_trials = function(requisites = NULL){
+      if (!self$is_batch_of_trials())
+        stop('Parameters are not a batch definition')
+      l <- private$.obj_parameters$get_params_for_trials()
+      for (p in l){
+        self$create_task(
+          id = as.character(p$values$trial),
+          comments = paste('Created automatically from trial', p$values$id),
+          params = p,
+          requisites = requisites
+        )
+      }
+    },
+    get_list_definition = function(str_dates = TRUE) {
+      list(
+        class      = class(self),
+        parameters = private$.obj_parameters$get_list_definition(str_dates = TRUE),
+        closed     = private$.closed,
+        log        = private$.obj_log$get_list_definition()
+      )
+    },
+    load_list_definition = function(def, str_dates = TRUE) {
+      if (!("CompMgm" %in% def$class)) {
+        stop("Wrong 'class' when reading definition of 'CompMgm' object attribute")
+      } 
+      private$.read_parameters(def$parameters, str_dates = TRUE)
+      private$.obj_log$load_list_definition(def$log)
+      private$.closed <- def$closed
+      invisible(self)
+    }
   )
 )
 
