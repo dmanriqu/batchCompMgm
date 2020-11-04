@@ -4,12 +4,12 @@ CompMgm  <- R6::R6Class (
   classname = "CompMgm", inherit = base_mgmObj, 
   private = list(
     .obj_log = NULL, 
-    .auto_update = FALSE,
+    .auto_update = NULL,
     .obj_parameters = NULL,
-    .closed = FALSE,
-    .loaded = FALSE,
+    .closed = NULL,
+    .loaded = NULL,
     .file_name = NULL,
-    .read_parameters = function (param_list_def, str_dates = TRUE){
+    .read_parameters = function (param_list_def){
       if (!("paramComp" %in% param_list_def$class)){
         stop("Parameters must be of class paramComp")
       } else if ("paramBatchComp" %in% param_list_def$class) {
@@ -43,18 +43,6 @@ CompMgm  <- R6::R6Class (
     .release_file_lock = function(flock){
       filelock::unlock(lock = flock)
     },
-    # .write = function(file_name) {
-    #   x  <- self$get_list_definition(str_dates = TRUE)
-    #   jsonlite::write_json(
-    #     x, path = file_name, pretty = TRUE,
-    #     null = "null", na = "null", auto_unbox = TRUE
-    #   )
-    # },
-    # .read = function(file_name) {
-    #   x <- jsonlite::read_json(path = file_name)
-    #   self$load_list_definition(x, str_dates = TRUE)
-    #   invisible(self)
-    # },
     .validate_id = function(id){
       #requirements for id.
       if(!is.character(id)) return('Task id must be of type character')
@@ -81,6 +69,9 @@ CompMgm  <- R6::R6Class (
       auto_update = FALSE,
       persist_format = c('json', 'yaml')
     ) {
+      auto_update = FALSE
+      closed = FALSE
+      loaded = FALSE
       super$initialize(persist_format = persist_format[1])
       fn <- !is.null(file_name)
       p <- !is.null(parameters)
@@ -155,6 +146,9 @@ CompMgm  <- R6::R6Class (
       cat("log:\n")
       private$.obj_log$print()
     },
+    get_log_object = function() {
+      return(private$.obj_log)
+    },
     # task control wrappers
     create_task = function(
       id = NULL, description = NULL, comments = NULL, filenames = NULL, params = NULL,
@@ -176,11 +170,12 @@ CompMgm  <- R6::R6Class (
       private$.obj_log$finish_task(id)
       invisible(self)
     },
-    get_log_object = function() {
-      return(private$.obj_log)
-    },
     start_task = function(id) {
       private$.obj_log$start_task(id)
+      invisible(self)
+    },
+    task_unstart= function(id, I_AM_SURE = FALSE){
+      private$.obj_log$task_unstart(id, I_AM_SURE)
       invisible(self)
     },
     is_task_defined = function(id) {
@@ -240,17 +235,6 @@ CompMgm  <- R6::R6Class (
       }
       parameters$equal(private$.obj_parameters)
     },
-    # getJSON = function() {
-    #   x  <- self$get_list_definition(str_dates = TRUE)
-    #   jsonlite::toJSON(
-    #     x, pretty = TRUE, null = "null",
-    #     na = "null", auto_unbox = TRUE
-    #   )
-    # },
-    # loadJSON = function(string) {
-    #   x <- jsonlite::fromJSON(txt = string)
-    #   self$load_list_definition(x, str_dates = TRUE)
-    # },
     save_as = function(file_name, overwrite_file = FALSE) {
       if (!overwrite_file && file.exists(file_name)) {
         stop("file '", file_name, "' already exists ", "use 'overwrite_file = TRUE' to overwrite")
@@ -310,10 +294,6 @@ CompMgm  <- R6::R6Class (
     },
     task_unfinish = function(id, I_AM_SURE = FALSE){
       private$.obj_log$task_unfinish(id, I_AM_SURE)
-      invisible(self)
-    },
-    task_unstart= function(id, I_AM_SURE = FALSE){
-      private$.obj_log$task_unstart(id, I_AM_SURE)
       invisible(self)
     },
     set_concurrent_on = function(){

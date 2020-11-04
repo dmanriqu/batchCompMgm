@@ -116,8 +116,6 @@ taskLog <- R6::R6Class(
         stop ("Task ", id,  " not started")
       } else if (self$is_task_finished(id)) {
         warning ("Task ", id,  " already finished")
-      } else if (!self$is_task_cleared(id)){
-         stop('Requisites for task ', id, 'not finished.') 
       } 
       else {
         private$.data[[id]]$finish()
@@ -256,7 +254,16 @@ taskLog <- R6::R6Class(
     },
     print = function(){
       for (t in private$.data){
-        cat(t$get_oneline_summary(), '\n')
+        id <- t$get_id()
+        r <- t$get_requisites()
+        if (!is.null(r) && length(r) > 0){
+          u <- self$get_unmet_requisites(id)
+          s <- sapply(r, FUN = function(x) ifelse(!(x %in% u), paste0('[X] ', x) , paste0('[ ] ', x) ))
+          req <- paste0('| Requires: ', paste(s, collapse = ', '))
+        } else {
+          req <- ''
+        }
+        cat(t$get_oneline_summary(), req, '\n')
       }
     },
     peek = function(){

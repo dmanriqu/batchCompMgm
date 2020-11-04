@@ -187,11 +187,18 @@ CTask <- R6::R6Class (
       }
     },
     get_oneline_summary = function(){
-      s = paste0('[',self$get_id(),':', private$.data$comments, '] -> ', 
+      id <- private$.data$id
+      if (self$is_finished()) {
+        id <- paste0('[X] ', id)
+      } else {
+        id <- paste0('[ ] ', id)
+      }
+      ev <- tail(self$get_events(), 1)
+      s = paste0(id, private$.data$comments, ' -> ', 
                  self$get_status(), ' at ', 
-                 self$get_time_status(), '. Last event: ', 
-                 private$.data$events[[length(private$.data$events)]], ' at ',
-                 names(private$.data$events[length(private$.data$events)]))
+                 self$get_time_status(),
+                 ' latest upd.: ', names(ev), ' (', ev, ')'
+      )
       return(s)
     },
     peek = function(){

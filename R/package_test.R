@@ -83,8 +83,12 @@ x <- snowfall::sfSapply(tasks,
    },
    a = batch$filename 
 )
-   x
-batch$update()
+batch
+(batch$update())
+b2 <- CompMgm$new(file_name = batch$filename)
+b2$set_concurrent_off()
+b2$task_unfinish('1.1', I_AM_SURE = T)
+b2$task_unfinish('1.3', I_AM_SURE = T)
 batch$set_concurrent_off()
 batch$get_log_object()$task_unfinish('1.3', I_AM_SURE = FALSE)
 batch$get_log_object()$task_unstart('1.3', I_AM_SURE = FALSE)

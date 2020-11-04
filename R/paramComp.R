@@ -9,16 +9,17 @@ paramComp <- R6::R6Class(
     .values = NULL,
     .date = as.POSIXct(NA),
     .add = function(list_params) {
+      if (is.null(private$.values)) private$.values <- list()
       if (!is.list(list_params)) {
         stop("Input must be a named list of parameters")
       } else if (sum(unique(names(list_params)) != "") != length(list_params)) {
         stop("Every parameter must have a different name")
       } else if (length(intersect(names(self$params), names(list_params))) > 0) {
         stop("Cannot have duplicate parameter names")
-      } else if (names(list_params)[1] != "id") {
+      } else if (!('id' %in% names(private$.values)) && names(list_params)[1] != "id") {
         stop("First element of the parameter list must be 'id'")
       }
-      private$.values <- append(private$.values, list_params)
+      private$.values <- modifyList(private$.values, list_params)
     },
     .func2str = function(func_str) {
       paste(deparse(func_str), collapse = "")
@@ -93,6 +94,7 @@ paramComp <- R6::R6Class(
       invisible(self)
     },
     save = function(file_name_pattern = NULL){
+      #overriding method for validation and use of patterned names
       if (!self$is_loaded) {
         warning("Data not loaded in object paramComp")
         return()
@@ -123,7 +125,8 @@ paramComp <- R6::R6Class(
         } else {
           new <- append(new,n)
         }
-        private$.values[[n]] <- f[[1]]
+        #private$.values[[n]] <- f[[1]]
+        private$.add(f)
       }
       private$.message('Fields updated: ', paste(old, collapse = ', '), '\nNew fields: ', paste(new, collapse = ', '))
       invisible(self)
