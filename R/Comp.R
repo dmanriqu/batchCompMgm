@@ -4,27 +4,37 @@ CompMgm  <- R6::R6Class (
   classname = "CompMgm", inherit = base_mgmObj, 
   private = list(
     .obj_log = NULL, 
-    .auto_update = NULL,
     .obj_parameters = NULL,
+    .auto_update = NULL,
     .closed = NULL,
     .loaded = NULL,
     .file_name = NULL,
-    .read_parameters = function (param_list_def){
-      if (!("paramComp" %in% param_list_def$class)){
-        stop("Parameters must be of class paramComp")
-      } else if ("paramBatchComp" %in% param_list_def$class) {
-        private$.obj_parameters = paramBatchComp$new()
-      } else {
-        private$.obj_parameters = paramComp$new(persist_format = private$.serializer$format)
-      }
-      #DEBUG
-      private$.obj_parameters$load_list_definition(def = param_list_def)
-    },
     .file_lock_name = function(file_name){
       d <- dirname(file_name)
       b <- basename(file_name)
       fnlck <-  paste0(d,'/~',b , '.lock')
       return(fnlck)
+    },
+    .name_param = function(p){
+      paste(p$values$id_comp, p$values$id_value_set, sep = ':')
+    },
+    .add_1_param = function(input){
+      o <- mgmObjFactory$new()
+      if (o$is_list_def(input)){
+        p <- o$list_def_2_obj(input)
+      } else if (is(input, 'paramComp')){
+        p <- input$clone()
+      } else {
+        stop('Wrong input. Must be a list definition or a "paramComp" object.')
+      }
+      n <- private$.name_param(p)
+      private$.obj_parameters[[n]] <- p
+    },
+    .load_list_parameters = function(list_input){
+      if(!is.list(list_input)) stop ('Input must be a list.')
+      for (p in list_input){
+        private$.add_1_param(p)
+      }
     },
     .acquire_file_lock = function(file_name, timeout = 1000, retries = 5){
       fnlck <-  private$.file_lock_name(file_name)
@@ -35,7 +45,7 @@ CompMgm  <- R6::R6Class (
         if (!is.null(flock)) {
           break
         } else {
-          if (i == retries) stop("Could not accquire file lock")
+          if (i == retries) stop("Could not acquire file lock")
         }
       }
       return(flock)
@@ -61,6 +71,7 @@ CompMgm  <- R6::R6Class (
     }
   ),
   public = list(
+    #General Class Stuff -----
     initialize  = function(
       parameters = NULL,
       file_name = NULL, 
@@ -69,14 +80,15 @@ CompMgm  <- R6::R6Class (
       auto_update = FALSE,
       persist_format = c('json', 'yaml')
     ) {
-      auto_update = FALSE
-      closed = FALSE
-      loaded = FALSE
+      private$.auto_update = FALSE
+      private$.closed = FALSE
+      private$.loaded = FALSE
+      private$.obj_parameters <- list()
       super$initialize(persist_format = persist_format[1])
       fn <- !is.null(file_name)
       p <- !is.null(parameters)
       ow <- overwrite_file
-      private$.file_name <- replace_markers(file_name, parameters$values)
+      private$.file_name <- private$.replace_markers(file_name, parameters[[1]]$values)
       action <- NULL
       if (!fn){
         if (p) 
@@ -100,8 +112,7 @@ CompMgm  <- R6::R6Class (
         }
       }
       if(action == 'create'){
-        private$.obj_parameters <- parameters$clone()
-        private$.obj_log <- taskLog$new(concurrent = concurrent, persist_format = private$.serializer$format)
+        private$.obj_log <- taskLog$new(concurrent = concurrent, persist_format = self$persist_format)
         private$.closed <- FALSE
         if (fn){
           l <- private$.acquire_file_lock(file_name = private$.file_name)
@@ -118,7 +129,7 @@ CompMgm  <- R6::R6Class (
           warning('Filename not attached. Use "save_as to create one".')
         }
       } else if (action == 'read'){
-        private$.obj_log <- taskLog$new(persist_format = private$.serializer$format)
+        private$.obj_log <- taskLog$new(persist_format = self$persist_format)
         l <- private$.acquire_file_lock(file_name = private$.file_name)
         e <- tryCatch(
           {
@@ -136,20 +147,30 @@ CompMgm  <- R6::R6Class (
       private$.auto_update = auto_update
       invisible(self)
     },
-    print = function() {
-      cat("------------------------------\n")
-      cat("Parameters:\n")
-      private$.obj_parameters$print()
-      cat("Scheduling mode:", ifelse(private$.obj_log$concurrent, "Concurrent", "Sequential"),"\n")
-      cat("Attached file:", private$.file_name, '\n')
-      cat("------------------------------\n")
-      cat("log:\n")
-      private$.obj_log$print()
-    },
     get_log_object = function() {
       return(private$.obj_log)
     },
-    # task control wrappers
+    get_list_definition = function() {
+      list(
+        class      = class(self),
+        parameters = lapply(private$.obj_parameters, FUN = function(x)x$get_list_definition()),
+        closed     = private$.closed,
+        log        = private$.obj_log$get_list_definition()
+      )
+    },
+    load_list_definition = function(def) {
+      f <- mgmObjFactory$new()
+      if (!f$is_list_def(def)) stop ('Wrong input. Not a list definition.')
+      if (!("CompMgm" %in% def$class)) {
+        stop("Wrong 'class' when reading definition of 'CompMgm' object attribute")
+      } 
+      private$.load_list_parameters(def$parameters)
+      private$.obj_log$load_list_definition(def$log)
+      private$.closed <- def$closed
+      invisible(self)
+    },
+    # Task log control wrappers ----
+    # 1) Task actions ----
     create_task = function(
       id = NULL, description = NULL, comments = NULL, filenames = NULL, params = NULL,
       objects = NULL, requisites = NULL
@@ -161,7 +182,9 @@ CompMgm  <- R6::R6Class (
       if (v != 'OK') stop (v)
       private$.obj_log$create_task(
         id = id, description = description, 
-        requisites = requisites, params = params, comments = comments, filenames = filenames, objects = objects)  
+        requisites = requisites, params = params, 
+        comments = comments, filenames = filenames, 
+        objects = objects)  
       invisible(self)
     },
     finish_task = function(id = NULL) {
@@ -174,10 +197,51 @@ CompMgm  <- R6::R6Class (
       private$.obj_log$start_task(id)
       invisible(self)
     },
-    task_unstart= function(id, I_AM_SURE = FALSE){
-      private$.obj_log$task_unstart(id, I_AM_SURE)
+    start_when_ready = function(id, poll_interval = 10, timeout = Inf) {
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop(v)
+      if (!self$is_task_defined(id)) stop(paste('Start task', id, 'not defined. Cannot start.'))
+      if (!self$is_task_started(id)) warning(paste('Task', id, 'was already started.'))
+      p1 <- Sys.time()
+      self$update()
+      while (!private$.obj_log$is_task_cleared(id)) {
+        if (Sys.time() - p1 > timeout) {
+          stop("Timeout reached while waiting for requisites of task '", id, "' to clear")
+        }
+        Sys.sleep(poll_interval)
+        self$update()
+      }
+      private$.obj_log$start_task(id)
       invisible(self)
     },
+    task_unfinish = function(id, I_AM_SURE = FALSE, unstart_dependent = TRUE){
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop(v)
+      private$.obj_log$task_unfinish(id, I_AM_SURE)
+      if (unstart_dependent){
+        dep <- private$.obj_log$get_all_dependent_tasks(id)
+        for (d in dep){
+          private$.obj_log$task_unfinish(d, I_AM_SURE = I_AM_SURE)
+          warning('Dependet task ', d, ' unstarted.')
+        }
+      }
+      invisible(self)
+    },
+    task_unstart = function(id, I_AM_SURE = FALSE, unstart_dependent = TRUE){
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop(v)
+      private$.obj_log$task_unstart(id, I_AM_SURE)
+      if (unstart_dependent){
+        dep <- private$.obj_log$get_all_dependent_tasks(id)
+        for (d in dep){
+          private$.obj_log$task_unfinish(d, I_AM_SURE = I_AM_SURE)
+          warning('Dependet task ', d, ' unstarted.')
+        }
+      }
+      invisible(self)
+    },
+    # 2) Task status ----
+    #  2.1) Task in isolation
     is_task_defined = function(id) {
       v <- private$.validate_id(id)
       if (v != 'OK') stop(v)
@@ -193,33 +257,50 @@ CompMgm  <- R6::R6Class (
       if (v != 'OK') stop(v)
       private$.obj_log$is_task_finished(id)
     },
+    #  2.2) Task in context
     is_task_cleared = function(id) {
       v <- private$.validate_id(id)
       if (v != 'OK') stop(v)
       private$.obj_log$is_task_cleared(id)
     },
-    is_batch_of_trials = function(){
-      return('paramBatchComp' %in% class(private$.obj_parameters))
-    },
-    start_when_ready = function(id, poll_interval = 10, timeout = Inf) {
+    get_all_unfinished_tasks = function(id){
       v <- private$.validate_id(id)
       if (v != 'OK') stop(v)
-      if (!self$is_task_defined(id)) stop(paste('Start task', id, 'not defined. Cannot start.'))
-      if (!self$is_task_started(id)) warning(paste('Task', id, 'was already started.'))
-      p1 <- Sys.time()
-      self$update()
-      while (!private$.obj_log$is_task_cleared(id)) {
-        if (Sys.time() - p1 > timeout) {
-          stop("Timeout reached while waiting for task '", id, "' to clear")
-        }
-        Sys.sleep(poll_interval)
-        self$update()
-      }
-      private$.obj_log$start_task(id)
-      invisible(self)
+      private$.obj_log$get_all_unfinished_tasks(id)
+    },
+    get_all_finished_tasks = function(id){
+      v <- private$.validate_id(id)
+      if (v != 'OK') stop(v)
+      private$.obj_log$get_all_finished_tasks(id)
     },
     
-    # Close for good
+    # Parameter object control ----
+    load_parameter_obj = function(paramComp_obj){
+      if (!is(paramComp_obj, 'paramComp')) {
+        stop('Need a paramComp object.')
+      }
+      private$.add_1_param(paramComp_obj)
+    },
+    same_parameters = function(elem = 1, paramObject) {
+      
+    },
+    generate_params_for_trials = function(elem = 1){
+      if (!is(private$.obj_parameters[[elem]], class2  = 'paramBatchComp'))
+        stop('Parameters are not a batch definition')
+      private$.obj_parameters[[elem]]$get_params_for_trials() 
+    },
+    generate_tasks_from_trials = function(elem = 1, requisites = NULL){
+      l <- self$generate_params_for_trials(elem = elem)
+      for (p in l){
+        self$create_task(
+          id = as.character(p$values$trial),
+          comments = paste('Autogenerated from', p$values$id_comp),
+          params = p,
+          requisites = requisites
+        )
+      }
+    },
+    # Class actions ----
     close = function() {
       # check that the tasks are completed
       if (!self$are_all_task_finished()){
@@ -227,13 +308,6 @@ CompMgm  <- R6::R6Class (
       } 
       private$.closed  <- TRUE
       invisible(self)
-    },
-    # Compare to another parameter object
-    same_parameters = function(parameters) {
-      if (is.null(private$.obj_parameters)) {
-        stop("Parameters not loaded")
-      }
-      parameters$equal(private$.obj_parameters)
     },
     save_as = function(file_name, overwrite_file = FALSE) {
       if (!overwrite_file && file.exists(file_name)) {
@@ -257,14 +331,14 @@ CompMgm  <- R6::R6Class (
     update = function(overwrite = FALSE) {
       if (is.null(private$.file_name)) {
         warning("Nothing done because no attached file set. Use save_as() for setting one")
-        return()
+        return(invisible())
       }
       if (overwrite){
         self$save_as(self$filename, overwrite_file = TRUE)
-        invisible(self)
+        return(invisible(self))
       }
       l <- private$.obj_log$get_list_definition()
-      o <- taskLog$new(persist_format = private$.serializer$format)
+      o <- taskLog$new(persist_format = self$persist_format)
       o$load_list_definition(l)
       flock <- private$.acquire_file_lock(private$.file_name)
       e <- tryCatch(
@@ -292,51 +366,24 @@ CompMgm  <- R6::R6Class (
       private$.auto_update <- FALSE
       message('Auto-update off.')
     },
-    task_unfinish = function(id, I_AM_SURE = FALSE){
-      private$.obj_log$task_unfinish(id, I_AM_SURE)
-      invisible(self)
-    },
     set_concurrent_on = function(){
       private$.obj_log$change_scheduling_mode(concurrent = TRUE)
     },
     set_concurrent_off = function(){
       private$.obj_log$change_scheduling_mode(concurrent = FALSE)
     },
-    # Functions for batch of trials. Requires parameter of class paramBatchComp
-    generate_params_for_trials = function(){
-      if (!self$is_batch_of_trials())
-        stop('Parameters are not a batch definition')
-      self$params$get_params_for_trials() 
-    },
-    generate_tasks_from_trials = function(requisites = NULL){
-      if (!self$is_batch_of_trials())
-        stop('Parameters are not a batch definition')
-      l <- private$.obj_parameters$get_params_for_trials()
-      for (p in l){
-        self$create_task(
-          id = as.character(p$values$trial),
-          comments = paste('Created automatically from trial', p$values$id),
-          params = p,
-          requisites = requisites
-        )
+    print = function() {
+      for (i in seq_along(private$.obj_parameters)) {
+      cat("------------------------------\n")
+      p <- private$.obj_parameters[i]
+      cat('> Parameters: "', names(p), '"\n', sep = '')
+        p[[1]]$print()
       }
-    },
-    get_list_definition = function() {
-      list(
-        class      = class(self),
-        parameters = private$.obj_parameters$get_list_definition(),
-        closed     = private$.closed,
-        log        = private$.obj_log$get_list_definition()
-      )
-    },
-    load_list_definition = function(def) {
-      if (!("CompMgm" %in% def$class)) {
-        stop("Wrong 'class' when reading definition of 'CompMgm' object attribute")
-      } 
-      private$.read_parameters(def$parameters)
-      private$.obj_log$load_list_definition(def$log)
-      private$.closed <- def$closed
-      invisible(self)
+      cat("------------------------------\n")
+      cat("Scheduling mode:", ifelse(private$.obj_log$concurrent, "Concurrent", "Sequential"),"\n")
+      cat("Attached file:", private$.file_name, '\n')
+      cat("log:\n")
+      private$.obj_log$print()
     }
   )
 )

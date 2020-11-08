@@ -7,7 +7,7 @@ paramComp <- R6::R6Class(
   lock_objects = FALSE,
   private = list(
     .values = NULL,
-    .date = as.POSIXct(NA),
+    .date = NULL,
     .add = function(list_params) {
       if (is.null(private$.values)) private$.values <- list()
       if (!is.list(list_params)) {
@@ -16,8 +16,10 @@ paramComp <- R6::R6Class(
         stop("Every parameter must have a different name")
       } else if (length(intersect(names(self$params), names(list_params))) > 0) {
         stop("Cannot have duplicate parameter names")
-      } else if (!('id' %in% names(private$.values)) && names(list_params)[1] != "id") {
-        stop("First element of the parameter list must be 'id'")
+      } else if (!'id_comp' %in% names(private$.values) && !'id_comp' %in% names(list_params)) {
+        stop("First element of the parameter list must be 'id_comp'")
+      } else if (!'id_value_set' %in% names(private$.values) && !'id_value_set' %in% names(list_params)) {
+        stop("Second element of the parameter list must be 'id_value_set'")
       }
       private$.values <- modifyList(private$.values, list_params)
     },
@@ -65,14 +67,14 @@ paramComp <- R6::R6Class(
     },
     equal = function(obj) {
       if (!self$is_loaded) stop("Data not loaded in object paramComp")
-      if (private$.values$id != obj$values$id) {
-        warning("Comparing objects with different ids.")
+      if (private$.values$id_comp != obj$values$id_comp) {
+        warning("Comparing objects with different id_comp.")
         return(FALSE)
       }
       private$.eq_function(self$values, obj$values)
     },
     print = function() {
-      cat('Object class: [', class(self), ']\n')
+      cat('Object class: [', paste(class(self), collapse = ', '), ']\n')
       cat(paste(names(self$values), self$values, sep = " = "),  sep = "\n")
       cat("Date:", as.character(self$date), "\n")
     },
@@ -80,7 +82,7 @@ paramComp <- R6::R6Class(
       if (!self$is_loaded) warning("Data not loaded in object paramComp")
       list(class = class(self),
            values = private$.values,
-           date = (if (str_dates) date2str(private$.date) else  private$.date),
+           date = (if (str_dates) private$.serializer$date2str(private$.date) else  private$.date),
            eq_function = private$.func2str(private$.eq_function)
       )
     },
@@ -89,7 +91,7 @@ paramComp <- R6::R6Class(
         stop("Wrong 'class' attribute")
       }
       private$.values <- def$values
-      private$.date <- (if (str_dates) str2date(def$date) else def$date)
+      private$.date <- (if (str_dates) private$.serializer$str2date(def$date) else def$date)
       private$.eq_function <- private$.str2func(def$eq_function)
       invisible(self)
     },
@@ -105,8 +107,8 @@ paramComp <- R6::R6Class(
       }
       super$save(file_name_pattern)
     },
-    string_from_fields= function(pattern = "<id>_param.json") {
-      replace_markers(pattern, data = private$.values)
+    string_from_fields= function(pattern = "<id_comp>_<id_value_set>_param.json") {
+      private$.replace_markers(pattern, data = private$.values)
     },
     update_fields = function(lst_fields_values) {
       if (!is.list(lst_fields_values)){
@@ -129,6 +131,8 @@ paramComp <- R6::R6Class(
         private$.add(f)
       }
       private$.message('Fields updated: ', paste(old, collapse = ', '), '\nNew fields: ', paste(new, collapse = ', '))
+      if ( (is.null(new) || length(new) != 0) && !'id_comp' %in% lst_fields_values)
+        warning('Fields added, but "id_comp" not updated. This could lead to inconsistencies.')
       invisible(self)
     },
     remove_fields = function(field_names){
@@ -136,8 +140,9 @@ paramComp <- R6::R6Class(
         stop('Need to provide a vector of character names')
       }
       for (n in field_names){
-        if (n == 'id'){
-          warning('Cannot remove id field. Skipping')
+        if (n == 'id_comp' || n == 'id_value_set'){
+          warning('Cannot remove id_comp nor id_value_set fields. Skipping')
+          return(invisible(self))
         }
         private$.values[[n]] <- NULL
       }

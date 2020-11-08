@@ -18,7 +18,7 @@ paramBatchComp <- R6::R6Class(
       for (i in indx_pat){
         if (!is.null(pt[[i]])){
           nam <- names(pt)[i]
-          new_cont <- replace_markers( pt[[nam]] , pt)
+          new_cont <- private$.replace_markers( pt[[nam]] , pt)
           new_name <- gsub(pattern = '_pattern$', x = nam, replacement = '')  
           pt[[nam]] <- NULL
           pt[[new_name]] <- new_cont
@@ -82,8 +82,8 @@ paramBatchComp <- R6::R6Class(
       }
       res
     },
-    load_list_definition = function(def = NULL, str_dates = TRUE){
-      super$load_list_definition(def = def, str_dates = str_dates)
+    load_list_definition = function(def = NULL){
+      super$load_list_definition(def = def)
       private$.validate_subclass()
     },
     load = function(file_name = NULL, string = NULL){

@@ -12,14 +12,16 @@ source(file = 'R/paramBatchComp.R')
 source(file = 'R/task.R')
 source(file = 'R/taskLog.R')
 source(file = 'R/Comp.R')
-a <- paramComp$new(parameter_list = list(id = 'TEST_COMP', mean = 1.0, sd = 1.0, trials =1000), eq_function = function(x,y)all.equal(x,y), persist_format = 'json')
+a <- paramComp$new(parameter_list = list(id_comp = 'TEST_COMP', id_value_set = 'v1', mean = 1.0, sd = 1.0, trials =1000), eq_function = function(x,y)all.equal(x,y), persist_format = 'json')
 a$save('borrar.txt')
 b <- paramComp$new(persist_format = 'json')
 b$load(file_name = 'borrar.txt')
 b == a
-batch <- CompMgm$new(parameters = a, file_name = 'batch_<id>_mean_<mean>.json', 
+a$remove_fields('id_comp')
+batch <- CompMgm$new(parameters = list(a), file_name = 'batch_<id_comp>_mean_<mean>.json', 
                      concurrent = TRUE, overwrite_file = TRUE, 
                      persist_format = 'json')
+batch$load_parameter_obj(a)
 batch$create_task(id = 't1', description = 'te uno')
 batch$create_task(id = 't2', description = 'te dos')
 batch$create_task(id = 'uno', description = '1')
@@ -89,6 +91,7 @@ b2 <- CompMgm$new(file_name = batch$filename)
 b2$set_concurrent_off()
 b2$task_unfinish('1.1', I_AM_SURE = T)
 b2$task_unfinish('1.3', I_AM_SURE = T)
+b2
 batch$set_concurrent_off()
 batch$get_log_object()$task_unfinish('1.3', I_AM_SURE = FALSE)
 batch$get_log_object()$task_unstart('1.3', I_AM_SURE = FALSE)

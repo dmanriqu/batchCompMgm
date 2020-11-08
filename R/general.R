@@ -1,32 +1,4 @@
 #Miscelaneous functions
-date2str <- function(date) {
-  if (is.null(date) || is.na(date)) {
-    return(NA)
-  } else if ("POSIXct" %in% class(date)) {
-    return(as.character(format(date, "%Y-%m-%d %H:%M:%S %Z")))
-  } else return('')
-}
-
-str2date <- function(str_date, na = as.POSIXct(NA)) {
-  x <- tryCatch(
-    expr = {as.POSIXct(str_date)}, 
-    error = function(err){na}
-  )
-  return(x)
-}
-
-replace_markers <- function(string, data) {
-  x <- gregexpr(pattern = "<[^>]+>", text = string, perl = TRUE)
-  labels <- unlist(regmatches(x = string, x))
-  fields <-  gsub("<([^>]+)>", replacement = '\\1', x =  labels, perl = TRUE)
-  subs <- data[fields]
-  if(length(subs) < length(fields)) stop("Substitution fields not found")
-  for (i in seq_along(fields)) {
-    string <- gsub(pattern = labels[i], replacement = subs[i], x = string)
-  }
-  return(string)
-}
-
 generate_names_from_pattern <- function(obj, pattern, sep = '\n', before = '', after = '', file = ''){
   res <- character()
   if ('CompMgm' %in% class(obj)) {
@@ -135,6 +107,11 @@ base_mgmObj <- R6::R6Class(
       message(...)
     }
   ),
+  active = list(
+    persist_format = function(){
+      private$.serializer$format
+    }
+  ),
   public = list(
     initialize = function(persist_format = c('json', 'yaml')){
       private$.serializer <- serializer$new(type = persist_format[1])
@@ -174,3 +151,47 @@ base_mgmObj <- R6::R6Class(
     }
   )
 )
+
+mgmObjFactory <- R6::R6Class(
+  classname = 'mbmObjFactory',
+  private = list(
+    .classes = c('base_mgmObj', 'paramComp', 'paramBatchComp', 
+                 'CTask', 'taskLog', 'CompMgm'),
+    .validate = function(lst){
+      if (!is.list(lst)){
+        stop('Input need to be a list')
+      }
+      if (!'class' %in% names(lst)){
+        stop('Not an object definition')
+      }
+      if (!is.character(lst$class)){
+        stop('"class" field is not of type character.')
+      }
+      if (!lst$class[1] %in% private$.classes){
+        stop("Class '", lst$class, "' not implemented.")
+      }
+    }
+  ),
+  public = list(
+    list_def_2_obj = function(list_def){
+      private$.validate(list_def)
+      type <- list_def$class[1]
+      o <- eval(parse(text = paste0(type, '$new()'))) 
+      o$load_list_definition(list_def)
+      return(o)
+    },
+    is_list_def = function(input){
+      tryCatch(
+       {
+         private$.validate(input)
+         TRUE
+       },
+        error = function(e){FALSE}
+      )
+    }
+  )
+)
+
+o <- mgmObjFactory$new()
+o$is_list_def(a$get_list_definition())
+

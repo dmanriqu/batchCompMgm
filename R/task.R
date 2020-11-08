@@ -60,9 +60,9 @@ CTask <- R6::R6Class (
         id = as.character(private$.data$id),
         class = class(self),
         description = private$.data$description,
-        time_init = date2str(private$.data$time_init),
-        time_start = date2str(private$.data$time_start),
-        time_end = date2str(private$.data$time_end),
+        time_init  = private$.serializer$date2str(private$.data$time_init),
+        time_start = private$.serializer$date2str(private$.data$time_start),
+        time_end   = private$.serializer$date2str(private$.data$time_end),
         comments = private$.data$comments,
         events = private$.data$events,
         filenames = private$.data$filenames,
@@ -78,17 +78,17 @@ CTask <- R6::R6Class (
       if (!("CTask" %in% x$class)) stop ('Not a definition of CTask class. Aborting.')
         private$.data$id = x$id
         private$.data$description = x$description
-        private$.data$time_init = str2date(x$time_init)
-        private$.data$time_start = str2date(x$time_start)
-        private$.data$time_end = str2date(x$time_end)
+        private$.data$time_init  = private$.serializer$str2date(x$time_init)
+        private$.data$time_start = private$.serializer$str2date(x$time_start)
+        private$.data$time_end   = private$.serializer$str2date(x$time_end)
         private$.data$comments = x$comments
         private$.data$events = x$events
         private$.data$filenames = x$filenames
         private$.data$objects = x$objects
         private$.data$requisites = x$requisites
       if(!is.null(x$params)) {
-        #it'd be better to allow to construct empty paramComp objects and then load the list...
-        private$.data$params <-paramComp$new(strJSON = jsonlite::toJSON(x$params, auto_unbox = TRUE, na = 'null'), persist_format = private$.serializer$format)
+        private$.data$params <-paramComp$new(persist_format = private$.serializer$format)
+        private$.data$params$load_list_definition(x$params)
       }
     },
     finish = function(){
@@ -118,7 +118,7 @@ CTask <- R6::R6Class (
     },
     get_time_end = function(as_str = TRUE){
       if(as_str){
-        return(date2str(private$.data$time_end))
+        return(private$.serializer$date2str(private$.data$time_end))
       }
       return(private$.data$time_end)
       
@@ -128,7 +128,7 @@ CTask <- R6::R6Class (
     },
     get_time_start = function(as_str = TRUE){
       if(as_str){
-        return(date2str(private$.data$time_start))
+        return(private$.serializer$date2str(private$.data$time_start))
       }
       return(private$.data$time_start)
     },
@@ -138,9 +138,9 @@ CTask <- R6::R6Class (
       return('defined')
     },
     get_time_status = function(){
-      if (self$get_status() == 'defined') return(date2str(private$.data$time_init))
-      if (self$get_status() == 'started') return(date2str(private$.data$time_start))
-      if (self$get_status() == 'finished') return(date2str(private$.data$time_end))
+      if (self$get_status() == 'defined')  return(private$.serializer$date2str(private$.data$time_init))
+      if (self$get_status() == 'started')  return(private$.serializer$date2str(private$.data$time_start))
+      if (self$get_status() == 'finished') return(private$.serializer$date2str(private$.data$time_end))
     },
     get_time_completion_sec = function(){
       if (self$get_status() != 'finished') return(NA)
@@ -150,7 +150,7 @@ CTask <- R6::R6Class (
       return(private$.data$params)
     },
     register_event = function(message){
-      t <- date2str(Sys.time())
+      t <- private$.serializer$date2str(Sys.time())
       lab <- t; cc <- 1
       while (lab %in% names(private$.data$events)){
         lab <- paste0(t, '_', cc)
@@ -169,10 +169,10 @@ CTask <- R6::R6Class (
     },
     print = function(){
       cat('Task "', private$.data$id, '"\n')
-      cat('created: ', date2str(private$.data$time_init), '\n', sep = '')
+      cat('created: ', private$.serializer$date2str(private$.data$time_init), '\n', sep = '')
       cat('Status:', self$get_status(), '\n')
-      if(self$is_started()) cat('Started at:', date2str(private$.data$time_start), '\n')
-      if(self$is_finished()) cat('Finished at:', date2str(private$.data$time_end), '\n')
+      if(self$is_started()) cat('Started at:', private$.serializer$date2str(private$.data$time_start), '\n')
+      if(self$is_finished()) cat('Finished at:', private$.serializer$date2str(private$.data$time_end), '\n')
       if(!is.null(private$.data$comments)) cat('Comments:', private$.data$comments, '\n')
       if(!is.null(private$.data$requisites)) cat('Requires:', paste(private$.data$requisites, collapse = ', '), '\n')
       if(!is.null(private$.data$params)){
@@ -194,7 +194,7 @@ CTask <- R6::R6Class (
         id <- paste0('[ ] ', id)
       }
       ev <- tail(self$get_events(), 1)
-      s = paste0(id, private$.data$comments, ' -> ', 
+      s = paste0(id, ' (', private$.data$comments, ') -> ', 
                  self$get_status(), ' at ', 
                  self$get_time_status(),
                  ' latest upd.: ', names(ev), ' (', ev, ')'
