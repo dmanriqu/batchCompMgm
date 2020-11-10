@@ -38,9 +38,6 @@ paramComp <- R6::R6Class(
     },
     date = function() {
       return(private$.date)
-    },
-    is_loaded = function() {
-      return(length(private$.values) > 0)
     }
   ),
   public = list(
@@ -50,27 +47,27 @@ paramComp <- R6::R6Class(
     #' @examples
     #' x <- paramComp$new(a = 1, b = 2)
     initialize = function(
-      load_from_file = NULL,
+      ...,
       parameter_list = NULL,
+      load_from_file = NULL,
       eq_function = function(a, b) {all.equal(a, b)},
-      persist_format = c('json','yaml'),
-      ...
+      persist_format = c('json','yaml')
     ) {
       elli_list <- list(...)
       super$initialize(persist_format[1])
-      if (!is.null(load_from_file)) {
-        self$load(load_from_file)
-      } else if (!is.null(parameter_list)) {
-        private$.add(parameter_list)
-      } else if (length(elli_list) > 0){
+      if (length(elli_list) > 0) {
         private$.add(elli_list)
-      }
+      } else  if (!is.null(parameter_list)) {
+        private$.add(parameter_list)
+      } else if (!is.null(load_from_file)) {
+        self$load(load_from_file)
+      } 
       private$.eq_function <- eq_function
       private$.date <- Sys.time()
       invisible(self)
     },
     equal = function(obj) {
-      if (!self$is_loaded) stop("Data not loaded in object paramComp")
+      if (!self$is_loaded()) stop("Data not loaded in object paramComp")
       if (private$.values$id_comp != obj$values$id_comp) {
         warning("Comparing objects with different id_comp.")
         return(FALSE)
@@ -83,12 +80,15 @@ paramComp <- R6::R6Class(
       cat("Date:", as.character(self$date), "\n")
     },
     get_list_definition = function(str_dates = TRUE) {
-      if (!self$is_loaded) warning("Data not loaded in object paramComp")
+      if (!self$is_loaded()) warning("Data not loaded in object paramComp")
       list(class = class(self),
            values = private$.values,
            date = (if (str_dates) private$.serializer$date2str(private$.date) else  private$.date),
            eq_function = private$.func2str(private$.eq_function)
       )
+    },
+    is_loaded = function() {
+      return(length(private$.values) > 0)
     },
     load_list_definition = function(def = NULL, str_dates = TRUE) {
       if (!("paramComp" %in% def$class)) {
@@ -101,7 +101,7 @@ paramComp <- R6::R6Class(
     },
     save = function(file_name_pattern = NULL){
       #overriding method for validation and use of patterned names
-      if (!self$is_loaded) {
+      if (!self$is_loaded()) {
         warning("Data not loaded in object paramComp")
         return()
       }

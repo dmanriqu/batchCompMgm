@@ -18,7 +18,7 @@ b <- paramComp$new(persist_format = 'json')
 b$load(file_name = 'borrar.txt')
 b == a
 a$remove_fields('id_comp')
-batch <- CompMgm$new(parameters = list(a), file_name = 'batch_<id_comp>_mean_<mean>.json', 
+batch <- CompMgm$new(parameters = list(a), file_name = 'Computing_test.json', 
                      concurrent = TRUE, overwrite_file = TRUE, 
                      persist_format = 'json')
 batch$load_parameter_obj(a)
@@ -100,7 +100,7 @@ batch$save_as(batch$filename, overwrite_file = TRUE)
 batch$update()
 r <- paramComp$new()
 r$save()
-r$is_loaded
+r$is_loaded()
 r$load(string = a$save())
 r$get_list_definition()
 r$save()

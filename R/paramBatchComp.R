@@ -50,21 +50,21 @@ paramBatchComp <- R6::R6Class(
   ),
   public = list(
     initialize = function(
-      load_from_file = NULL,
+      ...,
       parameter_list = NULL,
+      load_from_file = NULL,
       eq_function = function(a, b) {all.equal(a, b)},
-      persist_format = c('json', 'yaml'),
-      ...
+      persist_format = c('json', 'yaml')
     ) {
       if(!is.null(parameter_list))  parameter_list$trials <- as.character(parameter_list$trials)
       super$initialize(
+        ...,
         load_from_file = load_from_file,
         parameter_list = parameter_list,
         eq_function = eq_function,
-        persist_format = persist_format[1],
-        ...
+        persist_format = persist_format[1]
       )
-      if (self$is_loaded){
+      if (self$is_loaded()){
         private$.validate_subclass()
       }
     },
