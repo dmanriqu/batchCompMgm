@@ -53,14 +53,18 @@ paramComp <- R6::R6Class(
       load_from_file = NULL,
       parameter_list = NULL,
       eq_function = function(a, b) {all.equal(a, b)},
-      persist_format = c('json','yaml')
+      persist_format = c('json','yaml'),
+      ...
     ) {
+      elli_list <- list(...)
       super$initialize(persist_format[1])
       if (!is.null(load_from_file)) {
         self$load(load_from_file)
       } else if (!is.null(parameter_list)) {
         private$.add(parameter_list)
-      } 
+      } else if (length(elli_list) > 0){
+        private$.add(elli_list)
+      }
       private$.eq_function <- eq_function
       private$.date <- Sys.time()
       invisible(self)
