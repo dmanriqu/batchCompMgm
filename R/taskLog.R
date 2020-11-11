@@ -61,6 +61,9 @@ taskLog <- R6::R6Class(
     get_task = function(id){
       return(private$.data[[id]])
     },
+    get_tasks = function(ids){
+      return(private$.data[ids])
+    },
     #--- These are wrappers for methods from task object in private$.data ----
     #   --- 1) task actions ----
     create_task = function(

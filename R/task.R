@@ -168,7 +168,7 @@ CTask <- R6::R6Class (
       private$.data$events = list()
     },
     print = function(){
-      cat('Task "', private$.data$id, '"\n')
+      cat('Task "', private$.data$id, '"\n', sep = '')
       cat('created: ', private$.serializer$date2str(private$.data$time_init), '\n', sep = '')
       cat('Status:', self$get_status(), '\n')
       if(self$is_started()) cat('Started at:', private$.serializer$date2str(private$.data$time_start), '\n')
