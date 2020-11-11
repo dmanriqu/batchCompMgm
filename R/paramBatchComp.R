@@ -15,7 +15,6 @@ paramBatchComp <- R6::R6Class(
       f <- names(pt)
       r <- sapply(f, FUN = function(x)gregexpr(pattern = '_pattern$', x, perl = TRUE))
       indx_pat <- names(which(r > 0))
-      browser()
       for (nam in indx_pat){
         if (!is.null(pt[[nam]])){
           new_cont <- private$.replace_markers( pt[[nam]] , pt)
