@@ -13,11 +13,11 @@ paramBatchComp <- R6::R6Class(
       }
       pt$id_comp <- paste0(pt$id_comp,'_TRIAL')
       f <- names(pt)
-      r <- gregexpr(pattern = '_pattern$', f, perl = TRUE)
-      indx_pat <- which(r > 0)
-      for (i in indx_pat){
-        if (!is.null(pt[[i]])){
-          nam <- names(pt)[i]
+      r <- sapply(f, FUN = function(x)gregexpr(pattern = '_pattern$', x, perl = TRUE))
+      indx_pat <- names(which(r > 0))
+      browser()
+      for (nam in indx_pat){
+        if (!is.null(pt[[nam]])){
           new_cont <- private$.replace_markers( pt[[nam]] , pt)
           new_name <- gsub(pattern = '_pattern$', x = nam, replacement = '')  
           pt[[nam]] <- NULL
