@@ -272,17 +272,19 @@ taskLog <- R6::R6Class(
       message('Scheduling mode is now: ', ifelse(concurrent, 'concurrent', 'sequential'))
     },
     print = function(){
+      i <- 1
       for (t in private$.data){
         id <- t$get_id()
         r <- t$get_requisites()
         if (!is.null(r) && length(r) > 0){
           u <- self$get_unmet_requisites(id)
           s <- sapply(r, FUN = function(x) ifelse(!(x %in% u), paste0('[X] ', x) , paste0('[ ] ', x) ))
-          req <- paste0('| Requires: ', paste(s, collapse = ', '))
+          req <- paste0(' | Requires: ', paste(s, collapse = ', '))
         } else {
           req <- ''
         }
-        cat(t$get_oneline_summary(), req, '\n')
+        cat('(', i, ') ', t$get_oneline_summary(), req, '\n', sep = '')
+        i <- i + 1
       }
     },
     peek = function(){
