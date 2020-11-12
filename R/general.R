@@ -53,7 +53,12 @@ serializer <- R6::R6Class(
     },
     serial_2_listdef =function(in_str){
       if (private$.type == 'json'){
-        x <- jsonlite::fromJSON(txt = in_str, simplifyVector = TRUE) 
+        x <- jsonlite::fromJSON(
+          txt = in_str, 
+          simplifyVector = TRUE,
+          simplifyDataFrame = FALSE,
+          simplifyMatrix = FALSE
+        ) 
       } else if (private$.type == 'yaml'){
         x <- yaml::yaml.load(in_str)
       } else {stop('Serialization format not recognized.')}
