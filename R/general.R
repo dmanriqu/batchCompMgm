@@ -75,16 +75,27 @@ serializer <- R6::R6Class(
       return(s) 
     },
     date2str = function(obj_date) {
-      if (is.null(obj_date)) return(NULL)
-      if (is(obj_date, 'POSIXlt') || is(obj_date, 'POSIXct' || is(obj_date, 'POSIXt'))){
-        return(as.character(format(obj_date, "%Y-%m-%d %H:%M:%S %Z")))
-      } else {
-        return(NULL)
-      }
+      x <- tryCatch(
+        expr = {
+          if (is.null(obj_date) || is.na(obj_date) || length(obj_date) == 0) 
+            return(NULL)
+          if (is(obj_date, 'POSIXlt') || is(obj_date, 'POSIXct' || is(obj_date, 'POSIXt'))){
+            return(as.character(format(obj_date, "%Y-%m-%d %H:%M:%S %Z")))
+          }
+          NULL
+        },
+        error = function(e)return(NULL)
+      )
+      return(x)
     },
     str2date = function(str_date) {
       x <- tryCatch(
-        expr = {as.POSIXlt(str_date)}, 
+        expr = {
+          if (is.null(str_date) || is.na(str_date) || length(str_date) == 0){
+            stop()
+          }
+          as.POSIXlt(str_date)
+        },
         error = function(err){NULL}
       )
       return(x)
