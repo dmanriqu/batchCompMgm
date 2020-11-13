@@ -18,7 +18,7 @@ b <- paramComp$new(persist_format = 'json')
 b$load(file_name = 'borrar.txt')
 b == a
 a$remove_fields('id_comp')
-batch <- CompMgm$new(parameters = list(a), file_name = 'Computing_test.json', 
+batch <- CompMgm$new(parameters = a, file_name = 'Computing_test.json', 
                      concurrent = TRUE, overwrite_file = TRUE, 
                      persist_format = 'json')
 batch$load_parameter_obj(a)

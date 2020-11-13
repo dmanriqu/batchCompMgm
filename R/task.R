@@ -39,9 +39,9 @@ CTask <- R6::R6Class (
       private$.data$objects =objects
       private$.data$requisites = requisites
       
-      private$.data$time_init = Sys.time()
-      private$.data$time_end= as.POSIXct(NA)
-      private$.data$time_start = as.POSIXct(NA)
+      private$.data$time_init = private$.get_time()
+      private$.data$time_end= NULL
+      private$.data$time_start = NULL
       self$register_event('Object created.')
       j <- self$save()
       self$load(string = j)
@@ -97,24 +97,24 @@ CTask <- R6::R6Class (
         warning('Task "', private$.data$id,  '": finishing before registering starting time". Registering date of creation as starting time.')
         self$register_event('Starting date copied from creation date.')
       }
-      private$.data$time_end = Sys.time()
+      private$.data$time_end = private$.get_time()
       self$register_event('Task finished.')
     },
     start = function(){
       self$register_event('Task started')
-      private$.data$time_start = Sys.time()
+      private$.data$time_start = private$.get_time()
     },
     unfinish = function(){
       self$register_event('Task unfinished')
-      private$.data$time_end <- NA
+      private$.data$time_end <- NULL
     },
     unstart = function(){
       self$unfinish()
       self$register_event('Task unstarted')
-      private$.data$time_start<- NA
+      private$.data$time_start<- NULL
     },
     is_finished = function(){
-      !is.na(private$.data$time_end)
+      !is.null(private$.data$time_end)
     },
     get_time_end = function(as_str = TRUE){
       if(as_str){
@@ -124,7 +124,7 @@ CTask <- R6::R6Class (
       
     },
     is_started = function(){
-      !is.na(private$.data$time_start)
+      !is.null(private$.data$time_start)
     },
     get_time_start = function(as_str = TRUE){
       if(as_str){
@@ -150,7 +150,7 @@ CTask <- R6::R6Class (
       return(private$.data$params)
     },
     register_event = function(message){
-      t <- private$.serializer$date2str(Sys.time())
+      t <- private$.serializer$date2str(private$.get_time())
       lab <- t; cc <- 1
       while (lab %in% names(private$.data$events)){
         lab <- paste0(t, '_', cc)
@@ -197,7 +197,7 @@ CTask <- R6::R6Class (
       s = paste0(id, ' (', private$.data$comments, ') -> ', 
                  self$get_status(), ' at ', 
                  self$get_time_status(),
-                 ' latest upd.: ', names(ev), ' (', ev, ')'
+                 ' last upd.: ', names(ev), ' (', ev, ')'
       )
       return(s)
     },

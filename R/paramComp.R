@@ -63,7 +63,7 @@ paramComp <- R6::R6Class(
         self$load(load_from_file)
       } 
       private$.eq_function <- eq_function
-      private$.date <- Sys.time()
+      private$.date <- private$.get_time()
       invisible(self)
     },
     equal = function(obj) {
@@ -79,23 +79,23 @@ paramComp <- R6::R6Class(
       cat(paste(names(self$values), self$values, sep = " = "),  sep = "\n")
       cat("Date:", as.character(self$date), "\n")
     },
-    get_list_definition = function(str_dates = TRUE) {
+    get_list_definition = function() {
       if (!self$is_loaded()) warning("Data not loaded in object paramComp")
       list(class = class(self),
            values = private$.values,
-           date = (if (str_dates) private$.serializer$date2str(private$.date) else  private$.date),
+           date = private$.serializer$date2str(private$.date),
            eq_function = private$.func2str(private$.eq_function)
       )
     },
     is_loaded = function() {
       return(length(private$.values) > 0)
     },
-    load_list_definition = function(def = NULL, str_dates = TRUE) {
+    load_list_definition = function(def) {
       if (!("paramComp" %in% def$class)) {
         stop("Wrong 'class' attribute")
       }
       private$.values <- def$values
-      private$.date <- (if (str_dates) private$.serializer$str2date(def$date) else def$date)
+      private$.date <- private$.serializer$str2date(def$date)
       private$.eq_function <- private$.str2func(def$eq_function)
       invisible(self)
     },
@@ -105,7 +105,7 @@ paramComp <- R6::R6Class(
         warning("Data not loaded in object paramComp")
         return()
       }
-      r <- self$get_list_definition(str_dates = TRUE)
+      r <- self$get_list_definition()
       if (!is.null(file_name_pattern)){
         file_name_pattern <- private$.replace_markers(file_name_pattern, data = private$.values)
       }

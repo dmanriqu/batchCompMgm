@@ -74,17 +74,18 @@ serializer <- R6::R6Class(
       }
       return(s) 
     },
-    date2str = function(date) {
-      if (is.null(date) || is.na(date)) {
-        return(NA)
-      } else if ("POSIXct" %in% class(date)) {
-        return(as.character(format(date, "%Y-%m-%d %H:%M:%S %Z")))
-      } else return('')
+    date2str = function(obj_date) {
+      if (is.null(obj_date)) return(NULL)
+      if (is(obj_date, 'POSIXlt') || is(obj_date, 'POSIXct' || is(obj_date, 'POSIXt'))){
+        return(as.character(format(obj_date, "%Y-%m-%d %H:%M:%S %Z")))
+      } else {
+        return(NULL)
+      }
     },
-    str2date = function(str_date, na = as.POSIXct(NA)) {
+    str2date = function(str_date) {
       x <- tryCatch(
-        expr = {as.POSIXct(str_date)}, 
-        error = function(err){na}
+        expr = {as.POSIXlt(str_date)}, 
+        error = function(err){NULL}
       )
       return(x)
     }
@@ -110,6 +111,9 @@ base_mgmObj <- R6::R6Class(
     .message = function(...){
       if (private$.silent) invisible()
       message(...)
+    },
+    .get_time = function(){
+      return(trunc(Sys.time(), unit = 'sec'))
     }
   ),
   active = list(
