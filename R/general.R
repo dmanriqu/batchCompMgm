@@ -111,13 +111,22 @@ base_mgmObj <- R6::R6Class(
     .replace_markers = function(string, data) {
       x <- gregexpr(pattern = "<[^>]+>", text = string, perl = TRUE)
       labels <- unlist(regmatches(x = string, x))
+      if (length(labels) == 0) return(string)
       fields <-  gsub("<([^>]+)>", replacement = '\\1', x =  labels, perl = TRUE)
       subs <- data[fields]
-      if(length(subs) < length(fields)) stop("Substitution fields not found")
-      for (i in seq_along(fields)) {
-        string <- gsub(pattern = labels[i], replacement = subs[i], x = string)
+      if (any(sapply(subs, is.null))) stop("Substitution fields not found")
+      multiplicity <- sapply(subs, function(x)length(x), simplify = TRUE) 
+      if (sum(multiplicity > 1) > 1) stop('Cannot have more than one field with length > 1')
+      ln <- max(multiplicity)
+      res <- character(ln)
+      for (i in 1:ln) {
+        res[i] <- string
+        for (j in seq_along(fields)) {
+          s <- ifelse(multiplicity[j] > 1, subs[[j]][[i]], subs[[j]])
+          res[i] <- gsub(pattern = labels[[j]], replacement = s, x = res[i])
+        }
       }
-      return(string)
+      return(res)
     },
     .message = function(...){
       if (private$.silent) invisible()
@@ -212,6 +221,4 @@ mgmObjFactory <- R6::R6Class(
   )
 )
 
-o <- mgmObjFactory$new()
-o$is_list_def(a$get_list_definition())
 

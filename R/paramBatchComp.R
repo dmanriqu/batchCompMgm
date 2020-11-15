@@ -17,7 +17,10 @@ paramBatchComp <- R6::R6Class(
       indx_pat <- names(which(r > 0))
       for (nam in indx_pat){
         if (!is.null(pt[[nam]])){
-          new_cont <- private$.replace_markers( pt[[nam]] , pt)
+          new_cont <- character(0)
+          for (i in seq_along(pt[[nam]])){
+            new_cont[i] <- private$.replace_markers( pt[[nam]][i] , pt)
+          }
           new_name <- gsub(pattern = '_pattern$', x = nam, replacement = '')  
           pt[[nam]] <- NULL
           pt[[new_name]] <- new_cont
@@ -77,7 +80,7 @@ paramBatchComp <- R6::R6Class(
       }
       return(r)
     },
-    string_from_fields = function(pattern = '<id>'){
+    string_from_fields = function(pattern = '<id_comp>_<id_value_set>'){
       res <- character()
       for (t in self$get_params_for_trials()){
         res <- c(res, t$string_from_fields(pattern))
@@ -124,16 +127,15 @@ paramBatchComp <- R6::R6Class(
     }
   )
 )
-a <- paramBatchComp$new(
-  parameter_list = list(
-    id_comp = 'TEST_COMP', 
-    id_value_set = '2',
-    description = 'mean of <mean>',
-    fn_pattern = './<id>_<trial>.j',
-    mean = c(1.0, 2.0), 
-    sd = c(1.0,10), 
-    trials =1:2,
-    by_trial = c('mean', 'sd')
-  )
-)
-a$get_params_for_trials()
+#a <- paramBatchComp$new(
+#  parameter_list = list(
+#    id_comp = 'TEST_COMP', 
+#    id_value_set = '2',
+#    description = 'mean of <mean>',
+#    fn_pattern = './<id>_<trial>.j',
+#    mean = c(1.0, 2.0), 
+#    sd = c(1.0,10), 
+#    trials =1:2,
+#    by_trial = c('mean', 'sd')
+#  )
+#)

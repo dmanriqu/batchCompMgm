@@ -94,8 +94,7 @@ taskLog <- R6::R6Class(
       }
       private$.data[[id]] <-  CTask$new( 
         id = id, description = description, requisites = requisites, 
-        params = params, comments = comments, filenames = filenames, 
-        objects = objects,
+        params = params, comments = comments,
         persist_format = private$.serializer$format
       )
       invisible(self)

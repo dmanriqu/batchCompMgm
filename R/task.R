@@ -12,8 +12,6 @@ CTask <- R6::R6Class (
       time_end = NULL,
       comments = NULL,
       events = list(),
-      filenames = NULL,
-      objects = NULL,
       requisites = NULL
     )
     
@@ -25,8 +23,6 @@ CTask <- R6::R6Class (
       requisites =  NULL,
       params = NULL,
       comments = NULL,
-      filenames = NULL,
-      objects = NULL,
       persist_format = c('json', 'yaml')
     ){
       super$initialize(persist_format[1])
@@ -35,8 +31,6 @@ CTask <- R6::R6Class (
       private$.data$description = description
       private$.data$params =params
       private$.data$comments =comments
-      private$.data$filenames =filenames
-      private$.data$objects =objects
       private$.data$requisites = requisites
       
       private$.data$time_init = private$.get_time()
@@ -65,8 +59,6 @@ CTask <- R6::R6Class (
         time_end   = private$.serializer$date2str(private$.data$time_end),
         comments = private$.data$comments,
         events = private$.data$events,
-        filenames = private$.data$filenames,
-        objects = private$.data$objects,
         requisites = private$.data$requisites
       )
       if(!is.null(private$.data$params)) {
@@ -83,8 +75,6 @@ CTask <- R6::R6Class (
         private$.data$time_end   = private$.serializer$str2date(x$time_end)
         private$.data$comments = x$comments
         private$.data$events = x$events
-        private$.data$filenames = x$filenames
-        private$.data$objects = x$objects
         private$.data$requisites = x$requisites
       if(!is.null(x$params)) {
         private$.data$params <-paramComp$new(persist_format = private$.serializer$format)
@@ -121,7 +111,6 @@ CTask <- R6::R6Class (
         return(private$.serializer$date2str(private$.data$time_end))
       }
       return(private$.data$time_end)
-      
     },
     is_started = function(){
       !is.null(private$.data$time_start)

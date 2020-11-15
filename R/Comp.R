@@ -186,6 +186,9 @@ CompMgm  <- R6::R6Class (
     },
     # Task log control wrappers ----
     # 1) Task actions ----
+    get_task = function(id){
+      private$.obj_log$get_tasks(id)[[1]]
+    },
     get_tasks = function(ids){
       private$.obj_log$get_tasks(ids)
     },
@@ -204,8 +207,7 @@ CompMgm  <- R6::R6Class (
       private$.obj_log$create_task(
         id = id, description = description, 
         requisites = requisites, params = params, 
-        comments = comments, filenames = filenames, 
-        objects = objects)  
+        comments = comments)  
       invisible(self)
     },
     finish_task = function(id) {
@@ -287,6 +289,17 @@ CompMgm  <- R6::R6Class (
     },
     get_all_tasks = function(){
       private$.obj_log$get_tasks()
+    },
+    get_all_unfinished_task_names = function(){
+      n <- private$.obj_log$get_all_unfinished_tasks()
+      names(private$.obj_log$get_tasks(n))
+    },
+    get_all_finished_task_names = function(){
+      n <- private$.obj_log$get_all_finished_tasks()
+      names(private$.obj_log$get_tasks(n))
+    },
+    get_all_task_names = function(){
+      names(private$.obj_log$get_tasks())
     },
     # Parameter object control ----
     get_params = function(elem) {

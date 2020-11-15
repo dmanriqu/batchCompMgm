@@ -112,7 +112,7 @@ paramComp <- R6::R6Class(
       super$save(file_name_pattern)
     },
     string_from_fields= function(pattern = "<id_comp>_<id_value_set>_param.json") {
-      private$.replace_markers(pattern, data = private$.values)
+        private$.replace_markers(pattern, data = private$.values)
     },
     update_fields = function(lst_fields_values) {
       if (!is.list(lst_fields_values)){
@@ -151,6 +151,9 @@ paramComp <- R6::R6Class(
         private$.values[[n]] <- NULL
       }
       invisible(self)
+    },
+    files_exist = function(name_pattern){
+      fns = self$string_from_fields(name_pattern)
     }
   )
 )
